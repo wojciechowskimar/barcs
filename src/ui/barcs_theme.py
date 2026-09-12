@@ -282,11 +282,12 @@ def theme_toggle() -> None:
 
 
 def brand_header(tagline: str = "Bloomberg-grade Analytical & Research Cracking System") -> None:
-    """Logo + gradientowy wordmark. Zastępuje dotychczasowy blok nagłówka."""
-    logo = _logo_data_uri()
-    img = f'<img src="{logo}" alt="">' if logo else ""
+    """Emoji ośmiornicy + gradientowy wordmark. Zastępuje dotychczasowy blok
+    nagłówka. Na wyraźne życzenie użytkownika: 🐙 zamiast pliku graficznego
+    logo.png (ten sam wybór, co wcześniej dla page_icon) - _logo_data_uri()
+    zostaje w kodzie martwa, ale gotowa, gdyby kiedyś wrócić do rastra."""
     st.markdown(
-        f'<div class="barcs-brand">{img}'
+        f'<div class="barcs-brand"><span class="barcs-emoji-logo">🐙</span>'
         f'<span class="barcs-wordmark">BARCS</span>'
         f'<span class="barcs-tagline">{tagline}</span></div>',
         unsafe_allow_html=True,
