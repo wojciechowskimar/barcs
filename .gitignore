@@ -16,3 +16,7 @@ venv/
 
 # Streamlit
 .streamlit/secrets.toml
+
+uruchom_barcs.bat
+CLAUDE.md
+
