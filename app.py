@@ -6,14 +6,25 @@ zbudowanej przez moduł ingestion (scripts/run_ingestion.py) i nie wykonuje
 żadnych zapytań sieciowych — dzięki temu działa błyskawicznie nawet dla
 dużej listy spółek.
 
-Interfejs jest podzielony na trzy zakładki:
-- "Stock Screener"        - filtrowanie spółek po wskaźnikach (panel boczny).
-- "Master Chart"          - świecowy wykres cenowy jednej spółki z SMA20/SMA200
-                             i nałożonymi datami raportów finansowych (hover z
-                             Revenue/Net Income z danego okresu).
+Interfejs jest podzielony na sześć zakładek:
+- "BARCS Screener"        - filtrowanie spółek po wskaźnikach (panel boczny).
+- "Master Chart"          - świecowy wykres cenowy jednej spółki z SMA20/SMA200,
+                             nałożonymi datami raportów finansowych (hover z
+                             Revenue/Net Income) i wykresem historia+prognoza
+                             (Revenue/EPS) na tle estymat analityków.
 - "Porównywarka Spółek"   - transponowana tabela zestawiająca 2-5 wybranych
                              spółek obok siebie, z podświetleniem najlepszej
                              wartości w każdym wierszu.
+- "Scoring Ramion Ośmiornicy" - konfigurowalny model punktowy; każde kryterium
+                             oznaczone znacznikiem "backtest" albo "tylko teraz"
+                             (patrz Backtester i CLAUDE.md, zasada #12).
+- "Backtester Strategii"  - symulacja historyczna portfela point-in-time,
+                             ograniczona do genuinie historycznych kryteriów.
+- "Dane Surowe (Yahoo)"   - jedyna powierzchnia łącząca się z internetem na
+                             żywo - eksploracja wszystkich modułów Yahoo Finance.
+
+Wizualny motyw marki (paleta, typografia, ikony, dark/light) jest
+zaimplementowany w src/ui/barcs_theme.py - patrz docstring tamtego modułu.
 
 WAŻNA UWAGA METODOLOGICZNA (P/E i P/S):
 Schemat bazy (financials_ttm_annual, analyst_estimates) nie przechowuje
