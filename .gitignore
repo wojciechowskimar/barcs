@@ -20,3 +20,8 @@ venv/
 uruchom_barcs.bat
 CLAUDE.md
 
+# Paczka handoffu designu (jednorazowy input - README/CSS/PY stąd już
+# wdrożone w assets/ i src/ui/; reference/ to prototypy React "tylko do
+# oglądania" i duplikat logo.png, nie część aplikacji).
+design_handoff_streamlit_theme/
+

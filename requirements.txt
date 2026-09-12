@@ -1,8 +1,15 @@
+# Streamlit: PRZYPIĘTE dokładnie (nie >=) - assets/barcs_theme.css celuje w
+# konkretne wewnętrzne data-testid tej wersji (np. stSelectboxVirtualDropdown,
+# stMultiSelectDropdown, stNumberInputContainer, stDateInputField), część z
+# nich zmieniona przez Streamlit z BaseWeb na React Aria Components dopiero
+# w tej generacji wydań. Aktualizacja Streamlita może po cichu zepsuć motyw
+# (patrz src/ui/barcs_theme.py) - po każdej podbitce wersji przejrzyj wzrokowo
+# wszystkie 6 zakładek w OBU motywach (dark/light, theme_toggle()).
 yahooquery>=2.3.7
 yfinance>=0.2.40
 pandas>=2.2.0
 numpy>=1.26.0
-streamlit>=1.37.0
+streamlit==1.62.0
 plotly>=5.22.0
 tqdm>=4.66.0
 requests>=2.31.0

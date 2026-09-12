@@ -27,7 +27,6 @@ sekcja z wyjaśnieniem metodologii pod tabelą wyników). P/E nie wymaga tego
 przybliżenia (to zwykłe Cena / EPS), więc jest dokładny.
 """
 
-import base64
 import sqlite3
 from datetime import date
 from pathlib import Path
@@ -38,34 +37,40 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from config import settings
+from src.ui.barcs_theme import (
+    ACCENT,
+    BRAND_GRADIENT,
+    EVENT_MARKER,
+    EVENT_MARKER_OUTLINE,
+    FORECAST_BAR,
+    HISTORY_BAR,
+    MISSING,
+    POSITIVE,
+    SMA_20,
+    SMA_200,
+    TABLE_GRID,
+    badge,
+    brand_header,
+    fmt_percent,
+    fmt_ratio,
+    highlight_best,
+    icon,
+    inject_theme,
+    style_figure,
+    tab_label,
+    theme_toggle,
+    tokens,
+)
 
-# Logo (cyber-ośmiornica): logo.png to oryginał dostarczony przez użytkownika
-# (RGB, białe kółko na czarnym tle - bez przezroczystości). Wersje poniżej są
-# wyprowadzone z niego przez maskę geometryczną (okrąg wpisany w kwadrat),
-# NIE przez key-out koloru - octopus w środku też ma czarne elementy, więc
-# usuwanie "czerni" jako koloru wycięłoby dziury w samym rysunku.
-#
-# UWAGA: świadomie NIEUŻYWANE na razie w page_icon/nagłówku - użytkownik
-# poprosił o powrót do emoji 🐙 zamiast pliku graficznego. Infrastruktura
-# (ścieżki, base64) zostaje w kodzie martwa, ale gotowa - żeby przywrócić
-# logo, wystarczy podmienić literały "🐙" niżej z powrotem na LOGO_ICON_PATH
-# / _load_header_logo_base64().
-_APP_DIR = Path(__file__).resolve().parent
-LOGO_ICON_PATH = _APP_DIR / "logo_transparent.png"          # pełna rozdzielczość - favicon
-LOGO_HEADER_PATH = _APP_DIR / "logo_transparent_small.png"  # 160x160 - inline w nagłówku
-
+# Favicon (browser tab): emoji na wyraźne życzenie użytkownika, zamiast pliku
+# graficznego - patrz historia projektu. To NIE dotyczy nagłówka w treści
+# strony, który od wdrożenia design systemu BARCS renderuje logo.png przez
+# brand_header() (patrz src/ui/barcs_theme.py) - to dwie różne powierzchnie.
 st.set_page_config(
     page_title="BARCS | Platforma Analizy Fundamentalnej",
     page_icon="🐙",
     layout="wide",
 )
-
-
-def _load_header_logo_base64() -> str | None:
-    """Wczytuje mały wariant logo do osadzenia inline w nagłówku (data URI)."""
-    if not LOGO_HEADER_PATH.exists():
-        return None
-    return base64.b64encode(LOGO_HEADER_PATH.read_bytes()).decode("ascii")
 
 MARKET_LABELS = {"PL": "Polska (GPW)", "USA": "USA"}
 
@@ -505,7 +510,7 @@ def build_column_config() -> dict:
 
 
 def render_results(filtered_data: pd.DataFrame, total_companies: int) -> None:
-    st.subheader("Wyniki")
+    st.markdown(f"### {tab_label('screener', 'Wyniki')}", unsafe_allow_html=True)
     st.markdown(f"**Znaleziono {len(filtered_data)} z {total_companies} spółek** spełniających kryteria.")
 
     if filtered_data.empty:
@@ -663,14 +668,14 @@ def build_price_chart(
         fig.add_trace(
             go.Scatter(
                 x=prices["date"], y=prices["sma_20"], mode="lines",
-                name="SMA 20", line=dict(width=1.5, color="#22d3ee"),
+                name="SMA 20", line=dict(width=1.5, color=SMA_20),
             )
         )
     if show_sma200:
         fig.add_trace(
             go.Scatter(
                 x=prices["date"], y=prices["sma_200"], mode="lines",
-                name="SMA 200", line=dict(width=1.5, color="#c084fc"),
+                name="SMA 200", line=dict(width=1.5, color=SMA_200),
             )
         )
 
@@ -699,25 +704,24 @@ def build_price_chart(
                 x=events["fiscal_date"],
                 y=[top_of_chart] * len(events),
                 mode="markers",
-                marker=dict(symbol="triangle-down", size=10, color="#4ade80", line=dict(width=1, color="#1f2937")),
+                marker=dict(symbol="triangle-down", size=10, color=EVENT_MARKER, line=dict(width=1, color=EVENT_MARKER_OUTLINE)),
                 name="Raporty finansowe",
                 text=event_labels,
                 hovertemplate="%{text}<extra></extra>",
             )
         )
 
+    # style_figure() nakłada wspólny layout BARCS (tło panelu, siatka, fonty)
+    # dla AKTUALNIE wybranego motywu dark/light (patrz src/ui/barcs_theme.py)
+    # - musi wykonać się PRZED poniższym update_layout, żeby specyficzne dla
+    # tego wykresu ustawienia (tytuł, wysokość, legenda pozioma na górze)
+    # nadpisały tylko to, co faktycznie różni się od wspólnego layoutu.
+    style_figure(fig)
     fig.update_layout(
         title=f"{ticker} — cena i wydarzenia finansowe",
         xaxis_title="Data",
         yaxis_title=f"Cena ({currency})" if currency else "Cena",
         xaxis_rangeslider_visible=True,
-        # Celowo BEZ template="plotly_dark"/tła na sztywno: użytkownik ma
-        # przełącznik System/Light/Dark w menu Streamlit (patrz README) i
-        # wykres ma się do niego dostosowywać. st.plotly_chart(..., theme=
-        # "streamlit", czyli wartość domyślna) sam dobiera tło/siatkę/kolor
-        # osi do aktualnego motywu - narzucenie "plotly_dark" na sztywno
-        # renderowałoby jasny tekst osi niewidoczny na jasnym tle w trybie
-        # Light.
         height=650,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=80),
@@ -796,7 +800,7 @@ def build_forecast_bar_chart(series: pd.DataFrame, ticker: str, metric_name: str
     # pełnych jednostek (np. "3" zamiast "3.42"), więc dla EPS używamy
     # zwykłego formatowania dziesiętnego zamiast skali mld/mln.
     if metric_name == "EPS":
-        value_formatter = lambda value: "brak danych" if pd.isna(value) else f"{value:.2f}{f' {currency}' if currency else ''}"
+        value_formatter = lambda value: MISSING if pd.isna(value) else f"{value:.2f}{f' {currency}' if currency else ''}"
     else:
         value_formatter = lambda value: _format_money(value, currency)
 
@@ -806,7 +810,7 @@ def build_forecast_bar_chart(series: pd.DataFrame, ticker: str, metric_name: str
             x=history["label"],
             y=history["value"],
             name="Historia (zaraportowane)",
-            marker=dict(color="#a855f7"),
+            marker=dict(color=HISTORY_BAR),
             hovertemplate="%{x}<br>" + metric_name + ": %{customdata}<extra></extra>",
             customdata=[value_formatter(value) for value in history["value"]],
         )
@@ -816,11 +820,12 @@ def build_forecast_bar_chart(series: pd.DataFrame, ticker: str, metric_name: str
             x=forecast["label"],
             y=forecast["value"],
             name="Prognoza analityków",
-            marker=dict(color="#4ade80", pattern=dict(shape="/")),
+            marker=dict(color=FORECAST_BAR, pattern=dict(shape="/")),
             hovertemplate="%{x}<br>" + metric_name + ": %{customdata}<extra></extra>",
             customdata=[value_formatter(value) for value in forecast["value"]],
         )
     )
+    style_figure(fig)
     fig.update_layout(
         title=f"{ticker} — {metric_name}: historia i prognoza",
         xaxis_title="Okres",
@@ -834,7 +839,7 @@ def build_forecast_bar_chart(series: pd.DataFrame, ticker: str, metric_name: str
 
 
 def render_master_chart(data: pd.DataFrame) -> None:
-    st.subheader("Master Chart & Event Overlay")
+    st.markdown(f"### {tab_label('master_chart', 'Master Chart & Event Overlay')}", unsafe_allow_html=True)
     st.caption(
         "Wykres świecowy z nałożonymi średnimi kroczącymi i datami raportów finansowych "
         "(Revenue / Net Income w tooltipie) - do wizualnej oceny wpływu wyników na kurs."
@@ -898,34 +903,17 @@ COMPARISON_FORMATTERS = {
     "value": lambda value: f"{value:.2f}",
 }
 
-# Neonowa zieleń (paleta BARCS) jako półprzezroczysta poświata, nie pełne
-# kryjące wypełnienie - dzięki alpha-blendingowi ta sama wartość dobrze
-# komponuje się zarówno z ciemnym, jak i jasnym motywem Streamlit (użytkownik
-# ma przełącznik System/Light/Dark - podświetlenie nie może zakładać, który
-# wybierze).
-HIGHLIGHT_COLOR = "background-color: rgba(74, 222, 128, 0.30); font-weight: 600"
-
-
-def _highlight_best_in_row(row: pd.Series, direction_by_label: dict[str, str]) -> list[str]:
-    """
-    Funkcja dla Styler.apply(axis=1): dla wiersza-wskaźnika o zdefiniowanym
-    kierunku ("lower"/"higher") podświetla komórkę(i) z najlepszą wartością.
-    Wiersze bez kierunku (nazwa spółki, sektor, waluta, ceny w różnych
-    walutach itp.) - świadomie nieporównywalne 1:1 - nigdy nie są podświetlane.
-    """
+# Podświetlenie najlepszej wartości w wierszu (kolor + próg >=2 wartości do
+# porównania) żyje w src/ui/barcs_theme.py::highlight_best() - jedno miejsce
+# prawdy dla całej aplikacji, zamiast osobnej kopii tej samej logiki tutaj.
+def _apply_row_highlight(row: pd.Series, direction_by_label: dict[str, str]) -> list[str]:
+    """Wrapper dla Styler.apply(axis=1): woła highlight_best() tylko dla
+    wierszy z określonym kierunkiem ("lower"/"higher") - wiersze bez
+    kierunku (nazwa spółki, sektor, waluta...) nigdy nie są podświetlane."""
     direction = direction_by_label.get(row.name)
     if not direction:
         return [""] * len(row)
-
-    numeric_row = pd.to_numeric(row, errors="coerce")
-    if numeric_row.notna().sum() < 2:
-        # Mniej niż dwie spółki mają dane dla tego wskaźnika - nie ma czego
-        # porównywać, więc nic nie podświetlamy (uniknięcie mylącego
-        # oznaczenia jedynej dostępnej wartości jako "najlepszej").
-        return [""] * len(row)
-
-    best_value = numeric_row.max() if direction == "higher" else numeric_row.min()
-    return [HIGHLIGHT_COLOR if value == best_value else "" for value in numeric_row]
+    return highlight_best(row, direction)
 
 
 def style_comparison_table(table: pd.DataFrame, row_definitions: list[dict]):
@@ -953,17 +941,15 @@ def style_comparison_table(table: pd.DataFrame, row_definitions: list[dict]):
         else:
             styler = styler.format(COMPARISON_FORMATTERS[row_format], na_rep="—", subset=subset)
 
-    styler = styler.apply(lambda row: _highlight_best_in_row(row, direction_by_label), axis=1)
+    styler = styler.apply(lambda row: _apply_row_highlight(row, direction_by_label), axis=1)
 
     # Minimalny, czytelny wygląd tabeli HTML (odstępy, siatka, wyrównanie
     # nagłówków tickerów do środka) - bez tego surowy <table> wygląda
-    # bardzo surowo w porównaniu do reszty interfejsu Streamlit.
-    # Neutralny, półprzezroczysty szary zamiast koloru dobranego pod jeden
-    # konkretny motyw - czytelny odstęp niezależnie od tego, czy użytkownik
-    # ma włączony Light czy Dark (patrz uwaga przy HIGHLIGHT_COLOR wyżej).
+    # bardzo surowo w porównaniu do reszty interfejsu Streamlit. TABLE_GRID
+    # (z src/ui/barcs_theme.py) jest celowo stały w obu motywach dark/light.
     styler = styler.set_table_styles(
         [
-            {"selector": "th, td", "props": [("padding", "6px 14px"), ("border", "1px solid rgba(128,128,128,0.30)")]},
+            {"selector": "th, td", "props": [("padding", "6px 14px"), ("border", f"1px solid {TABLE_GRID}")]},
             {"selector": "th.col_heading", "props": [("text-align", "center")]},
             {"selector": "td", "props": [("text-align", "right")]},
         ]
@@ -972,7 +958,7 @@ def style_comparison_table(table: pd.DataFrame, row_definitions: list[dict]):
 
 
 def render_comparison(data: pd.DataFrame) -> None:
-    st.subheader("Porównywarka Spółek")
+    st.markdown(f"### {tab_label('comparison', 'Porównywarka Spółek')}", unsafe_allow_html=True)
     st.caption(
         "Wybierz spółki, żeby zestawić ich wskaźniki fundamentalne i szacunki analityków obok siebie. "
         "Zielone podświetlenie oznacza najlepszą wartość w danym wierszu."
@@ -1123,6 +1109,17 @@ def render_scoring_criteria_inputs() -> list[dict]:
     active_criteria: list[dict] = []
 
     for definition in SCORING_CRITERIA_DEFINITIONS:
+        # Znacznik zgodny z zasadą #7 design systemu (i zasadą #12 CLAUDE.md):
+        # "backtest" (zielony) dla ramion liczonych wyłącznie z genuinie
+        # historycznych danych (ceny + sprawozdania), "tylko teraz" (żółty)
+        # dla ramion opartych o niewersjonowane w czasie prognozy analityków
+        # - Backtester poniżej odrzuca te drugie (patrz BACKTESTABLE_CRITERIA_COLUMNS).
+        if definition["column"] in BACKTESTABLE_CRITERIA_COLUMNS:
+            status_badge = badge("backtest", tone="positive")
+        else:
+            status_badge = badge("tylko teraz", tone="warning")
+        st.markdown(f"{icon('arm', 14)} {status_badge}", unsafe_allow_html=True)
+
         enabled = st.checkbox(
             definition["checkbox_label"],
             value=definition["default_enabled"],
@@ -1214,13 +1211,17 @@ def build_scoring_column_config(max_possible_score: int) -> dict:
 
 
 def render_scoring(data: pd.DataFrame) -> None:
-    st.subheader("Modele Punktowe (Scoring Models)")
+    st.markdown(f"### {tab_label('scoring', 'Modele Punktowe (Scoring Models)')}", unsafe_allow_html=True)
     st.caption(
         "Przyznaj punkty za spełnienie wybranych kryteriów fundamentalnych i zobacz ranking spółek. "
         "Spółka bez danych dla danego kryterium dostaje za nie 0 punktów."
     )
 
-    with st.expander("⚙️ Skonfiguruj kryteria i wagi modelu scoringowego", expanded=True):
+    # Uwaga: natywne etykiety widgetów (expander/button/checkbox) nie
+    # renderują dowolnego HTML - glify Lucide (icon()/tab_label()) działają
+    # tylko w st.markdown(unsafe_allow_html=True). Stąd czysty tekst tutaj,
+    # bez emoji (zgodnie z zasadą "Emoji: nie" z design systemu).
+    with st.expander("Skonfiguruj kryteria i wagi modelu scoringowego", expanded=True):
         active_criteria = render_scoring_criteria_inputs()
 
     if not active_criteria:
@@ -1676,7 +1677,7 @@ def build_backtest_chart(
             y=equity_curve["portfolio_value"],
             mode="lines",
             name="Portfel BARCS",
-            line=dict(width=2.5, color="#a855f7"),
+            line=dict(width=2.5, color=ACCENT),
         )
     )
 
@@ -1687,7 +1688,7 @@ def build_backtest_chart(
                 y=benchmark_curve.values,
                 mode="lines",
                 name=f"Benchmark: {benchmark_label}",
-                line=dict(width=1.75, color="#4ade80", dash="dot"),
+                line=dict(width=1.75, color=POSITIVE, dash="dot"),
             )
         )
 
@@ -1698,6 +1699,7 @@ def build_backtest_chart(
         annotation_text="Kapitał początkowy",
     )
 
+    style_figure(fig)
     fig.update_layout(
         title="Krzywa kapitału — Portfel BARCS vs Benchmark",
         xaxis_title="Data",
@@ -1705,14 +1707,12 @@ def build_backtest_chart(
         height=580,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=80),
-        # Celowo bez template="plotly_dark" na sztywno - patrz komentarz przy
-        # build_price_chart (Master Chart) o przełączniku System/Light/Dark.
     )
     return fig
 
 
 def render_backtest(data: pd.DataFrame) -> None:
-    st.subheader("Backtester Strategii")
+    st.markdown(f"### {tab_label('backtest', 'Backtester Strategii')}", unsafe_allow_html=True)
     st.caption(
         "Symulacja historyczna: czy kryteria ustawione w zakładce „Scoring Ramion Ośmiornicy” "
         "faktycznie przyniosłyby zysk w przeszłości? Silnik korzysta WYŁĄCZNIE z genuinie "
@@ -1731,7 +1731,7 @@ def render_backtest(data: pd.DataFrame) -> None:
 
     if not backtestable_criteria:
         st.info(
-            "Włącz w zakładce „📊 Scoring Ramion Ośmiornicy” przynajmniej jedno kryterium oparte o "
+            "Włącz w zakładce „Scoring Ramion Ośmiornicy” przynajmniej jedno kryterium oparte o "
             "P/E, P/S, Dług/Aktywa albo Marżę EBITDA - tylko te da się bezpiecznie przetestować historycznie."
         )
         return
@@ -1756,6 +1756,7 @@ def render_backtest(data: pd.DataFrame) -> None:
     benchmark_choice = col_benchmark.selectbox(
         "Benchmark", options=benchmark_options, index=default_benchmark_index, key="bt_benchmark"
     )
+    st.caption("Dane lokalne (SQLite cache) - benchmark liczony wyłącznie z lokalnej bazy, bez połączeń sieciowych.")
 
     with st.expander("Ustawienia zaawansowane"):
         reporting_lag_days = st.number_input(
@@ -1787,7 +1788,7 @@ def render_backtest(data: pd.DataFrame) -> None:
         # nadal musi mieć wczytane ceny, żeby dało się go nałożyć na wykres.
         eligible_tickers.append(benchmark_choice)
 
-    if not st.button("🚀 Uruchom backtest", type="primary", key="bt_run"):
+    if not st.button("Uruchom backtest", type="primary", key="bt_run"):
         st.info("Ustaw parametry powyżej i kliknij, żeby uruchomić symulację.")
         return
 
@@ -1850,9 +1851,10 @@ def render_backtest(data: pd.DataFrame) -> None:
 
 # --- Podgląd Danych Surowych (Yahoo Finance) --------------------------------
 #
-# UWAGA ARCHITEKTONICZNA: to (obok opcjonalnego benchmarku w Backteście)
-# JEDYNE miejsce w aplikacji, które łączy się z internetem - reszta czyta
-# wyłącznie z lokalnej bazy SQLite (patrz docstring modułu na górze pliku).
+# UWAGA ARCHITEKTONICZNA: to JEDYNE miejsce w aplikacji, które łączy się z
+# internetem - reszta (w tym benchmark w Backteście, patrz jego "Ustawienia
+# zaawansowane") czyta wyłącznie z lokalnej bazy SQLite (patrz docstring
+# modułu na górze pliku).
 # Cel jest celowo inny niż src/ingestion/fetcher.py: tamten pobiera
 # efektywnie, w paczkach, TYLKO to, co pipeline faktycznie zapisuje do bazy.
 # Ten moduł ma pokazać WSZYSTKO, co Yahoo Finance w ogóle udostępnia dla
@@ -1941,15 +1943,17 @@ def fetch_raw_yahoo_data(ticker: str) -> dict:
 
 
 def render_raw_data_explorer(data: pd.DataFrame) -> None:
-    st.subheader("Podgląd Danych Surowych (Yahoo Finance)")
+    st.markdown(f"### {tab_label('raw_data', 'Podgląd Danych Surowych (Yahoo Finance)')}", unsafe_allow_html=True)
     st.caption(
         "Narzędzie eksploracyjne: pokazuje WSZYSTKIE dostępne moduły danych z Yahoo Finance dla "
         "dowolnego tickera - przydatne, żeby sprawdzić, jakie wskaźniki w ogóle istnieją, zanim "
         "zostaną dodane do pipeline'u ingestion (src/ingestion/fetcher.py)."
     )
+    # Benchmark w Backteście jest w pełni lokalny (patrz jego "Ustawienia
+    # zaawansowane") - to jest jedyne miejsce w aplikacji sięgające do sieci.
     st.warning(
-        "🌐 To (obok opcjonalnego benchmarku w Backteście) JEDYNE miejsce w aplikacji, które łączy się "
-        "z internetem - pobiera dane NA ŻYWO z Yahoo Finance, nie z lokalnej bazy SQLite."
+        "To JEDYNE miejsce w aplikacji, które łączy się z internetem - pobiera dane na żywo "
+        "z Yahoo Finance, nie z lokalnej bazy SQLite."
     )
 
     # Podpowiedzi z tickerów już obecnych w lokalnej bazie, ale
@@ -1969,8 +1973,8 @@ def render_raw_data_explorer(data: pd.DataFrame) -> None:
         help="Wybierz spółkę już obecną w bazie albo wpisz dowolny inny ticker rozpoznawany przez Yahoo Finance - nie musi być w lokalnej bazie.",
     )
     ticker_input = (ticker_choice or "").strip().upper()
-    fetch_clicked = col_fetch.button("🔍 Pobierz", key="raw_explorer_fetch", type="primary")
-    clear_clicked = col_clear.button("🔄 Wyczyść cache", key="raw_explorer_clear")
+    fetch_clicked = col_fetch.button("Pobierz", key="raw_explorer_fetch", type="primary")
+    clear_clicked = col_clear.button("Wyczyść cache", key="raw_explorer_clear")
 
     if clear_clicked:
         fetch_raw_yahoo_data.clear()
@@ -1981,7 +1985,7 @@ def render_raw_data_explorer(data: pd.DataFrame) -> None:
 
     display_ticker = st.session_state.get("raw_explorer_last_ticker")
     if not display_ticker:
-        st.info("Wpisz ticker i kliknij „🔍 Pobierz”.")
+        st.info("Wpisz ticker i kliknij „Pobierz”.")
         return
 
     try:
@@ -1995,7 +1999,7 @@ def render_raw_data_explorer(data: pd.DataFrame) -> None:
     st.markdown(f"**Wyniki dla `{display_ticker}`** — {total_fields} pól w modułach, {total_rows} wierszy w tabelach.")
 
     if data["errors"]:
-        with st.expander(f"⚠️ Moduły niedostępne dla {display_ticker} ({len(data['errors'])})"):
+        with st.expander(f"Moduły niedostępne dla {display_ticker} ({len(data['errors'])})"):
             for error_message in data["errors"]:
                 st.caption(f"- {error_message}")
 
@@ -2022,28 +2026,19 @@ def render_raw_data_explorer(data: pd.DataFrame) -> None:
 # --- Punkt wejścia ----------------------------------------------------------
 
 def main() -> None:
-    # Gradient fiolet -> zieleń na tekście tytułu, dopasowany do neonowej
-    # palety logo (cyber-ośmiornica). Logo wstawiane jako inline base64 <img>
-    # (zamiast st.image) - dzięki temu leży w tej samej linii co tekst, na
-    # tej samej wysokości, zamiast zajmować osobny wiersz nad/pod tytułem.
-    logo_html = "🐙 "  # na życzenie: emoji zamiast pliku graficznego (patrz uwaga przy LOGO_ICON_PATH)
-    st.markdown(
-        f"""
-        <h1 style="
-            font-size: 2.75rem;
-            font-weight: 800;
-            letter-spacing: 0.01em;
-            margin-bottom: 0.1rem;
-        ">{logo_html}<span style="
-            background-image: linear-gradient(90deg, #a855f7 0%, #4ade80 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
-        ">BARCS</span></h1>
-        """,
-        unsafe_allow_html=True,
-    )
+    # inject_theme() musi wykonać się na początku KAŻDEGO rerunu (nie tylko
+    # raz per sesja) - dopiero to gwarantuje, że kliknięcie theme_toggle()
+    # natychmiast przemalowuje całą aplikację (patrz docstring modułu
+    # src/ui/barcs_theme.py, dlaczego config.toml [theme] do tego nie
+    # wystarczy).
+    inject_theme()
+
+    header_col, toggle_col = st.columns([6, 1])
+    with header_col:
+        brand_header()
+    with toggle_col:
+        theme_toggle()
+
     st.caption("Zaawansowany system selekcji spółek giełdowych — analiza fundamentalna GPW i USA w jednym miejscu.")
     st.caption("Dane lokalne (SQLite cache) - bez połączeń sieciowych przy przeglądaniu.")
 
@@ -2070,14 +2065,17 @@ def main() -> None:
 
     filtered_data = apply_filters(data, selected_markets, indicator_ranges, show_incomplete)
 
+    # st.tabs() nie renderuje HTML w etykietach - stąd czysty tekst bez emoji
+    # tutaj; glify Lucide dla tych samych sekcji żyją w nagłówkach WEWNĄTRZ
+    # każdej zakładki (tab_label() w render_xxx poniżej).
     tab_screener, tab_charts, tab_comparison, tab_scoring, tab_backtest, tab_raw = st.tabs(
         [
-            "🔍 BARCS Screener",
-            "📈 Master Chart",
-            "⚖️ Porównywarka Spółek",
-            "📊 Scoring Ramion Ośmiornicy",
-            "📈 Backtester Strategii",
-            "🔬 Dane Surowe (Yahoo)",
+            "BARCS Screener",
+            "Master Chart",
+            "Porównywarka Spółek",
+            "Scoring Ramion Ośmiornicy",
+            "Backtester Strategii",
+            "Dane Surowe (Yahoo)",
         ]
     )
 

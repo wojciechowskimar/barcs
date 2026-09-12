@@ -1,0 +1,24 @@
+# BARCS — konfiguracja natywna Streamlita.
+#
+# UWAGA: ten plik NIE jest mechanizmem przełączania dark/light — Streamlit
+# czyta [theme] tylko raz, przy starcie procesu, i nie da się zmienić
+# theme.base w runtime. Faktyczny, przełączalny w locie dark/light motyw
+# jest zaimplementowany niezależnie w src/ui/barcs_theme.py (CSS custom
+# properties generowane w Pythonie per st.session_state) — patrz docstring
+# tamtego modułu. Sekcja [theme] poniżej to tylko sensowny punkt startowy
+# dla nielicznych natywnych elementów Streamlita, których nasz CSS nie
+# pokrywa (np. kolor paska ładowania w przeglądarce przed pierwszym
+# renderem) - hexy odpowiadają domyślnemu (dark) tokenowi z barcs_theme.py.
+[theme]
+base = "dark"
+primaryColor = "#A855F7"
+backgroundColor = "#0B0A12"
+secondaryBackgroundColor = "#16151F"
+textColor = "#D2CFE3"
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

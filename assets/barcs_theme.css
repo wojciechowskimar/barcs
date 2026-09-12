@@ -1,0 +1,245 @@
+/* ============================================================================
+   BARCS — nadpisania CSS dla Streamlita.
+   Każda reguła ma komentarz z CELEM. Streamlit nie ma publicznego API do
+   stylowania: selektory data-testid są względnie stabilne, klasy st-* NIE są.
+   Po każdej aktualizacji Streamlita przejrzyj sześć zakładek.
+
+   WAŻNE: ten plik NIE definiuje wartości zmiennych --barcs-* (nie ma tu
+   bloku :root{...} z hexami). Wartości są wstrzykiwane dynamicznie przez
+   src/ui/barcs_theme.py::inject_theme() z tokens() dla AKTUALNIE wybranego
+   motywu (dark/light) - patrz docstring tamtego modułu, dlaczego statyczny
+   :root nie wystarcza (Streamlit nie przełącza .streamlit/config.toml w
+   runtime). Ten plik zawiera WYŁĄCZNIE reguły strukturalne odwołujące się do
+   var(--barcs-*) - żadnych hardcodowanych hexów poza tymi, które są celowo
+   niezależne od motywu (patrz komentarze przy takich regułach).
+   ============================================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* CEL: globalna typografia i tło. `body` jest tu CELOWO osobno od .stApp:
+   Streamlit renderuje niektóre widgety (np. listę opcji selectboxa, patrz
+   niżej) w portalu doczepionym blisko <body>, poza drzewem .stApp - taki
+   portal dziedziczyłby domyślne, STATYCZNE tło z config.toml (zawsze
+   dark), gdyby nie ta reguła. */
+html,body,[class*="css"],.stApp{font-family:var(--barcs-font);color:var(--barcs-text)}
+body,.stApp{background:var(--barcs-app)!important}
+[data-testid="stAppViewContainer"]{background:var(--barcs-app)}
+[data-testid="stHeader"]{background:transparent;height:0}
+
+/* CEL: sidebar wizualnie odseparowany od aplikacji — głębia to jasność
+   powierzchni, nie cień. */
+[data-testid="stSidebar"]{background:var(--barcs-sidebar);border-right:1px solid var(--barcs-border-subtle)}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:20px}
+
+/* CEL: skala nagłówków z design systemu. */
+h1,[data-testid="stMarkdownContainer"] h1{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--barcs-text-strong);margin:0 0 6px}
+h2,[data-testid="stMarkdownContainer"] h2{font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--barcs-text-strong)}
+h3,[data-testid="stMarkdownContainer"] h3{font-size:16px;font-weight:600;color:var(--barcs-text-strong)}
+p,[data-testid="stMarkdownContainer"] p,li{font-size:13px;line-height:1.5;color:var(--barcs-text);text-wrap:pretty}
+[data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] p{font-size:12px;color:var(--barcs-muted)}
+code,kbd{font-family:var(--barcs-mono);font-size:12px;background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);border-radius:3px;padding:2px 5px;color:var(--barcs-text)}
+/* CEL: linki — akcent jako TEKST musi mieć własny, ciemniejszy w motywie
+   jasnym odcień (accent-text), inaczej fioletowy tekst ginie na białym tle. */
+a{color:var(--barcs-accent-text);text-decoration:none}
+a:hover{color:var(--barcs-accent-text-hover);text-decoration:underline;text-underline-offset:2px}
+
+/* CEL: zakładki — podkreślenie akcentem, bez pigułek. */
+[data-testid="stTabs"] [role="tablist"]{gap:20px;border-bottom:1px solid var(--barcs-border)}
+[data-testid="stTabs"] [role="tab"]{height:34px;padding:0 2px;background:transparent;border:none;
+  border-bottom:2px solid transparent;color:var(--barcs-muted);font-size:13px;font-weight:400;
+  transition:color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease)}
+[data-testid="stTabs"] [role="tab"]:hover{color:var(--barcs-text-strong)}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"]{color:var(--barcs-text-strong);font-weight:600;border-bottom-color:var(--barcs-accent)}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"]{background:var(--barcs-accent)}
+
+/* CEL: przyciski — 30px, promień 5px, press = 0.5px w dół (bez kurczenia). */
+.stButton>button,.stDownloadButton>button,.stFormSubmitButton>button{
+  min-height:30px;padding:0 11px;border-radius:5px;
+  font-family:var(--barcs-font);font-size:12px;font-weight:600;letter-spacing:-.01em;
+  background:var(--barcs-raised);color:var(--barcs-text-strong);border:1px solid var(--barcs-border);
+  transition:background-color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease),transform 80ms var(--barcs-ease)}
+.stButton>button:hover,.stDownloadButton>button:hover{background:var(--barcs-hover);border-color:var(--barcs-border-strong);color:var(--barcs-text-strong)}
+.stButton>button:active,.stDownloadButton>button:active{transform:translateY(.5px)}
+.stButton>button:focus-visible,.stDownloadButton>button:focus-visible{box-shadow:var(--barcs-ring);outline:none}
+.stButton>button:disabled{opacity:.42;cursor:not-allowed}
+/* CEL: primary = jedna akcja commitująca na widok. Tekst zawsze biały — tło
+   przycisku to zawsze nasycony fiolet akcentu, niezależnie od motywu. */
+.stButton>button[kind="primary"],.stFormSubmitButton>button{background:var(--barcs-accent);border-color:var(--barcs-accent);color:#fff}
+.stButton>button[kind="primary"]:hover,.stFormSubmitButton>button:hover{background:var(--barcs-accent-hover);border-color:var(--barcs-accent-hover)}
+.stButton>button[kind="primary"]:active{background:var(--barcs-accent-press)}
+
+/* CEL: inputy — 5px promień, focus tylko ringiem. [data-baseweb=...] selektory
+   są zachowane dla starszych Streamlitów; ta wersja (1.62) renderuje
+   selectbox/multiselect/date_input przez React Aria Components (BEZ
+   data-baseweb w ogóle) - stąd dodatkowe, jawne selektory po klasie
+   .stXxx i data-testid poniżej, zweryfikowane empirycznie w devtoolsach. */
+[data-baseweb="input"],[data-baseweb="select"]>div,[data-baseweb="textarea"],
+.stTextInput input,.stNumberInput input,.stDateInput input,
+[data-testid="stSelectbox"] [role="group"],[data-testid="stMultiSelect"] [role="group"]{
+  background:var(--barcs-card)!important;border:1px solid var(--barcs-border)!important;border-radius:5px!important;
+  color:var(--barcs-text-strong)!important;font-family:var(--barcs-font);font-size:13px;
+  transition:border-color 120ms var(--barcs-ease)}
+[data-testid="stSelectbox"] input,[data-testid="stMultiSelect"] input{
+  background:transparent!important;color:var(--barcs-text-strong)!important;border:none!important}
+/* CEL: number_input ma osobny <div> "spinner" (+/- kroku) OTACZAJĄCY input,
+   z WŁASNYM statycznym tłem niezależnym od pola tekstowego - bez tego
+   input świeci jasną kartą wewnątrz ciemnej, niedopasowanej ramki. */
+[data-testid="stNumberInputContainer"]{background:var(--barcs-card)!important}
+/* CEL: date_input ma analogiczny otaczający <div> z własnym statycznym tłem. */
+[data-testid="stDateInputField"]{background:var(--barcs-card)!important}
+[data-testid="stNumberInputStepDown"],[data-testid="stNumberInputStepUp"]{
+  background:transparent!important;color:var(--barcs-muted)!important}
+[data-testid="stNumberInputStepDown"]:hover,[data-testid="stNumberInputStepUp"]:hover{background:var(--barcs-hover)!important}
+[data-baseweb="input"]:focus-within,[data-baseweb="select"]>div:focus-within,[data-baseweb="textarea"]:focus-within,
+[data-testid="stSelectbox"] [role="group"]:focus-within,[data-testid="stMultiSelect"] [role="group"]:focus-within{
+  border-color:var(--barcs-accent-hover)!important;box-shadow:var(--barcs-ring)}
+/* CEL: panel opcji selectboxa/multiselecta - React Aria renderuje OBA w
+   portalu blisko <body>, poza drzewem .stApp (patrz uwaga o `body` na
+   górze pliku), więc bez tej reguły trzymają statyczne tło z config.toml
+   niezależnie od motywu. Dwa różne, ale równie stabilne data-testid. */
+[data-testid="stSelectboxVirtualDropdown"],[data-testid="stMultiSelectDropdown"]{
+  background:var(--barcs-panel)!important;border:1px solid var(--barcs-border)!important;
+  border-radius:8px!important;box-shadow:0 10px 28px rgba(0,0,0,.35)!important}
+[data-testid="stSelectboxVirtualDropdown"] [role="option"],[data-testid="stMultiSelectDropdown"] [role="option"]{
+  color:var(--barcs-text)!important;font-family:var(--barcs-font);font-size:13px}
+[data-testid="stSelectboxVirtualDropdown"] [role="option"]:hover,[data-testid="stSelectboxVirtualDropdown"] [role="option"][data-hovered="true"],
+[data-testid="stMultiSelectDropdown"] [role="option"]:hover,[data-testid="stMultiSelectDropdown"] [role="option"][data-hovered="true"]{background:var(--barcs-hover)!important}
+[data-testid="stSelectboxVirtualDropdown"] [role="option"][aria-selected="true"],
+[data-testid="stMultiSelectDropdown"] [role="option"][aria-selected="true"]{
+  background:var(--barcs-selected-bg)!important;color:var(--barcs-text-strong)!important}
+/* CEL: cokolwiek liczbowe lub tickerowe — mono z tabular-nums. */
+.stNumberInput input,.stTextInput input[aria-label*="icker"],.stTextInput input[aria-label*="Ticker"]{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+[data-testid="stWidgetLabel"] label,[data-testid="stWidgetLabel"] p{font-size:12px;font-weight:500;color:var(--barcs-muted)}
+
+/* CEL: suwaki — wartości nad torem w fiolecie (accent-text — czytelne w
+   obu motywach), mono. */
+[data-testid="stSlider"] [data-baseweb="slider"] [role="slider"]{
+  background:var(--barcs-accent-hover);border:2px solid var(--barcs-app);box-shadow:0 1px 2px rgba(0,0,0,.45)}
+[data-testid="stSlider"] [data-testid="stTickBar"],[data-testid="stSlider"] [data-testid="stThumbValue"]{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--barcs-accent-text)}
+[data-testid="stSlider"] [data-baseweb="slider"] div[data-testid]{background:var(--barcs-accent)}
+
+/* CEL: checkbox / radio / toggle — akcent na stanie włączonym. React Aria
+   (ta wersja Streamlita) renderuje wizualny kwadracik checkboxa jako <div>
+   będący RODZEŃSTWEM <label>, nie rodzeństwem samego (wizualnie ukrytego)
+   <input> - stąd :has() zamiast prostszego input:checked+div. Stan
+   "wyłączony" dostaje własną regułę (surowy Streamlit trzyma go statycznie
+   ciemnym niezależnie od motywu), którą stan "włączony" niżej nadpisuje.*/
+[data-testid="stCheckbox"] label+div{background:var(--barcs-card)!important;border:1px solid var(--barcs-border)!important}
+[data-testid="stCheckbox"] label:has(input:checked)+div,[data-baseweb="checkbox"] [data-checked="true"]{background:var(--barcs-accent)!important;border-color:var(--barcs-accent)!important}
+[data-testid="stCheckbox"] label p,[data-testid="stRadio"] label p{font-size:13px;color:var(--barcs-text)}
+[data-baseweb="radio"] [data-checked="true"]{border-color:var(--barcs-accent)!important;background:var(--barcs-accent)!important}
+
+/* CEL: multiselect — wybrane wartości jako wypełnione fioletowe chipy, promień 3px. */
+[data-baseweb="tag"]{background:var(--barcs-accent)!important;border-radius:3px!important;
+  font-family:var(--barcs-font);font-size:12px;font-weight:500;color:#fff!important;height:22px}
+[data-baseweb="tag"] svg{fill:rgba(255,255,255,.8)}
+
+/* CEL: metryki jako karty — bez cienia, promień 8px. */
+[data-testid="stMetric"]{background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);
+  border-radius:8px;padding:16px;box-shadow:none}
+[data-testid="stMetricLabel"],[data-testid="stMetricLabel"] p{font-size:10px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim)}
+[data-testid="stMetricValue"]{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;
+  font-size:21px;font-weight:600;color:var(--barcs-text-strong)}
+[data-testid="stMetricDelta"]{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:11px}
+[data-testid="stMetricDelta"] svg{display:none} /* CEL: kierunek niesie kolor, nie strzałka Streamlita */
+
+/* CEL: tabele i dataframe'y — gęste wiersze, mono w liczbach, nagłówki uppercase 10px. */
+[data-testid="stDataFrame"],[data-testid="stTable"]{border:1px solid var(--barcs-border-subtle);border-radius:6px;overflow:hidden}
+[data-testid="stDataFrame"] [role="columnheader"],[data-testid="stTable"] th{
+  background:var(--barcs-card);font-family:var(--barcs-font);font-size:10px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim);
+  border-bottom:1px solid var(--barcs-border)}
+[data-testid="stDataFrame"] [role="gridcell"],[data-testid="stTable"] td{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:12px;
+  color:var(--barcs-text);border-bottom:1px solid var(--barcs-border-subtle)}
+[data-testid="stTable"] tbody tr:nth-child(even){background:rgba(128,128,128,.04)}
+[data-testid="stTable"] tbody tr:hover{background:var(--barcs-hover)}
+/* CEL: tabela porównywarki (Styler.to_html) — siatka i podświetlenie
+   najlepszej wartości. rgba(128,128,128,.30) jest CELOWO stała w obu
+   motywach (zasada #5 handoffu) - szarość w połowie skali czyta się
+   podobnie na ciemnym i jasnym tle. */
+.barcs-comparison table{border-collapse:collapse;width:100%}
+.barcs-comparison th,.barcs-comparison td{border:1px solid rgba(128,128,128,.30);padding:6px 12px;font-size:.9rem}
+.barcs-comparison th{background:var(--barcs-card);font-family:var(--barcs-font);font-size:10px;
+  font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim);text-align:right}
+.barcs-comparison th:first-child{text-align:left}
+.barcs-comparison td{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;text-align:right}
+.barcs-comparison td:first-child{font-family:var(--barcs-font);text-align:left;color:var(--barcs-text);white-space:nowrap}
+.barcs-comparison td.barcs-best{background:var(--barcs-highlight);font-weight:600}
+
+/* CEL: expandery = panele. Promień 6px, bez cienia. */
+[data-testid="stExpander"]{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;box-shadow:none}
+/* CEL: <summary> ma domyślnie WŁASNE, statyczne tło narzucone przez
+   Streamlita (nie dziedziczy tła kontenera) - bez jawnego przezroczystego
+   tła tutaj header expandera zostawałby ciemny niezależnie od motywu. */
+[data-testid="stExpander"] summary{background:transparent!important;font-size:13px;color:var(--barcs-text);padding:9px 11px}
+[data-testid="stExpander"] summary:hover{background:var(--barcs-hover)!important}
+
+/* CEL: alerty — cicha alfa hue, bez lewego paska akcentu. Kolory info/
+   ostrzeżenia to przezroczyste tinty brandu - czytają się na obu tłach,
+   bo tekst wewnątrz i tak korzysta z var(--barcs-text). */
+[data-testid="stAlert"]{border-radius:6px;border-width:1px;font-size:13px;padding:10px 12px}
+[data-testid="stNotification"]{border-radius:6px}
+div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-baseweb="notification"]{
+  background:rgba(34,211,238,.16);border:1px solid rgba(34,211,238,.3);color:var(--barcs-text)}
+.stAlert[data-testid="stAlert"] p{color:var(--barcs-text)}
+
+/* CEL: wykresy Plotly siedzą na powierzchni panelu. */
+[data-testid="stPlotlyChart"]{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;padding:4px}
+.js-plotly-plot .modebar{background:transparent!important}
+.js-plotly-plot .modebar-btn path{fill:var(--barcs-muted)!important}
+
+/* CEL: pasek postępu i spinner w akcencie marki — gradient marki jest
+   celowo stały w obu motywach (to już jest marka, patrz brand_header). */
+[data-testid="stProgress"]>div>div>div{background:linear-gradient(90deg,#A855F7 0%,#4ADE80 100%)}
+[data-testid="stSpinner"] i{border-top-color:var(--barcs-accent)!important}
+
+/* CEL: nagłówek marki (renderowany przez brand_header()). */
+.barcs-brand{display:flex;align-items:center;gap:10px;margin:0 0 4px}
+.barcs-brand img{width:34px;height:34px;border-radius:999px;flex:0 0 auto;background:#fff}
+.barcs-brand .barcs-wordmark{font-family:var(--barcs-font);font-weight:800;font-size:30px;letter-spacing:-.02em;
+  background-image:linear-gradient(90deg,#A855F7 0%,#4ADE80 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.barcs-brand .barcs-tagline{font-size:12px;color:var(--barcs-muted);margin-left:auto}
+
+/* CEL: pigułki statusu i znaczniki ramion (backtest / tylko teraz). Tekst
+   wewnątrz pigułki korzysta z *-text (kontrast na obu tłach); tło i
+   obramowanie to translucent tint tego samego koloru w obu motywach. */
+.barcs-badge{display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 7px;
+  border-radius:999px;font-size:11px;font-weight:500;white-space:nowrap;border:1px solid}
+.barcs-badge--positive{background:rgba(74,222,128,.16);color:var(--barcs-positive-text);border-color:rgba(74,222,128,.34)}
+.barcs-badge--warning{background:rgba(250,204,21,.16);color:var(--barcs-warning-text);border-color:rgba(250,204,21,.34)}
+.barcs-badge--accent{background:rgba(168,85,247,.18);color:var(--barcs-accent-text);border-color:var(--barcs-accent-border)}
+.barcs-badge--negative{background:rgba(248,113,113,.16);color:var(--barcs-negative-text);border-color:rgba(248,113,113,.34)}
+
+/* CEL: ikony Lucide jako maska — dziedziczą currentColor. */
+.barcs-icon{display:inline-block;width:16px;height:16px;background:currentColor;vertical-align:-3px;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain}
+
+/* CEL: liczby zawsze tabularne, gdy oznaczone; kolor zmiany = kierunek. */
+.barcs-num{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+.barcs-pos{color:var(--barcs-positive-text)}
+.barcs-neg{color:var(--barcs-negative-text)}
+.barcs-flat{color:var(--barcs-muted)}
+.barcs-missing{color:var(--barcs-dim)}
+
+/* CEL: przełącznik motywu (theme_toggle()) — mały, spójny z resztą
+   kontrolek, bez własnego nowego języka wizualnego. */
+.barcs-theme-toggle .stButton>button{min-height:26px;padding:0 9px;font-size:11px}
+
+/* CEL: scrollbary w rampie neutralnej danego motywu. */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--barcs-active);border-radius:999px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--barcs-scrollbar-hover);background-clip:content-box}
+
+/* CEL: ukryj brandowanie Streamlita — to jest produkt BARCS. Toolbar (prawy
+   górny róg) zostaje ukryty tylko wizualnie jako pasek Streamlita; nasz
+   własny theme_toggle() żyje w normalnym przepływie strony, nie w tym menu. */
+#MainMenu,footer,[data-testid="stToolbar"]{visibility:hidden;height:0}
+
+/* CEL: szacunek dla prefers-reduced-motion. */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0ms!important;animation-duration:0ms!important}}
