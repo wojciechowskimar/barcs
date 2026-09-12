@@ -231,8 +231,17 @@ def style_figure(fig):
 
 
 # --- wstrzykiwanie motywu ----------------------------------------------------
+#
+# UWAGA: celowo BEZ @st.cache_data na tych dwóch funkcjach. Plik CSS/logo to
+# grosze kilkanaście KB - koszt odczytu przy każdym rerunie jest pomijalny, a
+# cache'owanie go było realnym błędem: st.cache_data nie wie, że plik na
+# dysku się zmienił (klucz cache'a to argumenty funkcji, nie zawartość pliku
+# ani jego mtime), więc długo działający proces Streamlita (np. ten sam,
+# odpalony przed edycją CSS i tylko auto-przeładowany przez file-watcher
+# Streamlita po zmianie app.py) zamrażał starą/pustą wartość na zawsze,
+# dopóki proces nie został ręcznie zrestartowany - dokładnie taki objaw
+# zgłosił użytkownik ("nie widzę nowego designu").
 
-@st.cache_data(show_spinner=False)
 def _read_static_css() -> str:
     try:
         return CSS_PATH.read_text(encoding="utf-8")
@@ -240,7 +249,6 @@ def _read_static_css() -> str:
         return ""
 
 
-@st.cache_data(show_spinner=False)
 def _logo_data_uri() -> str:
     """Logo jako data URI — działa też, gdy aplikacja stoi za proxy."""
     try:
