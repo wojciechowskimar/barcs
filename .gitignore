@@ -1,0 +1,18 @@
+# Lokalna baza danych (cache) - nie commitujemy danych rynkowych
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Logi
+logs/*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Streamlit
+.streamlit/secrets.toml
