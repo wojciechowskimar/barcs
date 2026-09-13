@@ -1,4 +1,4 @@
-# Streamlit: PRZYPIĘTE dokładnie (nie >=) - assets/barcs_theme.css celuje w
+# Streamlit: PRZYPIĘTE dokładnie (nie >=) - src/ui/barcs_theme.css celuje w
 # konkretne wewnętrzne data-testid tej wersji (np. stSelectboxVirtualDropdown,
 # stMultiSelectDropdown, stNumberInputContainer, stDateInputField), część z
 # nich zmieniona przez Streamlit z BaseWeb na React Aria Components dopiero

@@ -29,9 +29,17 @@ Rozwiązanie w tym module jest więc CAŁKOWICIE niezależne od config.toml:
 - `tokens()` zwraca słownik kolorów dla AKTUALNEGO wyboru.
 - `inject_theme()` przy KAŻDYM rerunie generuje blok `:root{--barcs-*: ...}`
   z wartościami z `tokens()` i doklaja go przed statycznym arkuszem
-  `assets/barcs_theme.css` (ten plik odwołuje się tylko do `var(--barcs-*)`,
+  `src/ui/barcs_theme.css` (ten plik odwołuje się tylko do `var(--barcs-*)`,
   nigdy do hexów wprost) - dzięki temu jedno przełączenie natychmiast
   przemalowuje całą aplikację, bez restartu procesu.
+
+  UWAGA: ten CSS celowo NIE leży w assets/ - Dash (dodany później, obok tej
+  Streamlit apki, patrz dash_app.py) automatycznie i alfabetycznie wczytuje
+  KAŻDY plik z assets/ jako globalny <link>. Trzymanie go tam kolidowało
+  klasami (.barcs-brand, .barcs-badge, .barcs-icon...) ze współdzieloną
+  assets/barcs.css Dasha, a jego reguły odwołujące się do --barcs-* (które
+  wstrzykuje WYŁĄCZNIE inject_theme() poniżej) rozwiązywały się do pustki
+  poza Streamlitem.
 - `plotly_layout()` / `style_figure()` robią to samo dla wykresów Plotly,
   które nie widzą CSS (SVG, nie DOM) - stąd osobny, analogiczny mechanizm.
 
@@ -88,13 +96,20 @@ import streamlit as st
 # --- ścieżki -----------------------------------------------------------------
 
 _ROOT = Path(__file__).resolve().parents[2]
-CSS_PATH = _ROOT / "assets" / "barcs_theme.css"
+# CELOWO NIE w assets/: Dash (dash_app.py, dodany później obok tej Streamlit
+# apki) automatycznie i alfabetycznie wczytuje KAŻDY plik z assets/ jako
+# globalny <link> - trzymanie tu barcs_theme.css powodowało, że jego reguły
+# (odwołujące się do --barcs-* wstrzykiwanych przez inject_theme() poniżej,
+# których Dash nigdy nie generuje) nadpisywały puste wartości na klasy takie
+# jak .barcs-brand/.barcs-badge/.barcs-icon współdzielone z Dash-ową
+# assets/barcs.css. Plik CSS mieszka więc obok tego modułu, nie w assets/.
+CSS_PATH = Path(__file__).resolve().parent / "barcs_theme.css"
 LOGO_PATH = _ROOT / "logo.png"
 
 ThemeName = Literal["dark", "light"]
 
 # --- tokeny niezależne od motywu (marka — nie zmieniaj bez aktualizacji obu
-# tabel wyżej i w assets/barcs_theme.css) -------------------------------------
+# tabel wyżej i w src/ui/barcs_theme.css) -------------------------------------
 
 ACCENT = "#A855F7"
 ACCENT_HOVER = "#C084FC"
