@@ -25,3 +25,8 @@ CLAUDE.md
 # oglądania" i duplikat logo.png, nie część aplikacji).
 design_handoff_streamlit_theme/
 
+# Paczka handoffu migracji Dash (jednorazowy input - scaffold/ stąd już
+# wdrożony w dash_app.py, src/ui/, src/views/, src/data/, assets/barcs.css;
+# reference/ to prototypy/UI kit "tylko do oglądania", nie część aplikacji).
+dash_migration_handoff/
+

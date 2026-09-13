@@ -1,0 +1,516 @@
+/* ============================================================================
+   BARCS — nadpisania CSS dla Streamlita.
+   Każda reguła ma komentarz z CELEM. Streamlit nie ma publicznego API do
+   stylowania: selektory data-testid są względnie stabilne, klasy st-* NIE są.
+   Po każdej aktualizacji Streamlita przejrzyj sześć zakładek.
+   ============================================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* ---------------------------------------------------------------------------
+   MOTYWY.
+
+   Streamlit nie potrafi przełączyć theme.base w runtime — config.toml działa
+   tylko przy pierwszym renderze. Dlatego oba motywy są zdefiniowane tu, a
+   barcs_theme.py wstrzykuje TEN arkusz zawsze, plus jedną klasę na kontenerze
+   aplikacji: .barcs-light albo .barcs-dark. Ciemny jest domyślny.
+
+   Zmieniają się WYŁĄCZNIE kolory. Ani jeden odstęp, promień, rozmiar czy czas
+   nie różni się między motywami — przełączenie nie przestawia layoutu.
+   --------------------------------------------------------------------------- */
+
+:root,
+.barcs-dark{
+  /* ---- DARK (domyślny) ---- */
+  --barcs-app:#0B0A12;--barcs-sidebar:#07060C;--barcs-panel:#11101A;--barcs-card:#16151F;
+  --barcs-raised:#1B1A26;--barcs-hover:#21202E;--barcs-active:#282636;
+  --barcs-border-subtle:#201F2C;--barcs-border:#2B2939;--barcs-border-strong:#3A3750;
+  --barcs-text-strong:#EDEBF5;--barcs-text:#D2CFE3;--barcs-muted:#837FA0;--barcs-dim:#5E5A75;
+  --barcs-accent:#A855F7;--barcs-accent-hover:#C084FC;--barcs-accent-press:#9333EA;
+  --barcs-positive:#4ADE80;--barcs-negative:#F87171;--barcs-warning:#FACC15;--barcs-info:#22D3EE;
+  --barcs-highlight:rgba(74,222,128,.30);
+  --barcs-selected:rgba(168,85,247,.16);--barcs-accent-border:#7E22CE;
+  --barcs-nav-active-bg:rgba(168,85,247,.16);--barcs-nav-active-fg:#E9D5FF;
+  --barcs-thead:#16151F;--barcs-tooltip:#1B1A26;--barcs-tooltip-fg:#D2CFE3;
+  --barcs-track:#282636;--barcs-zebra:rgba(255,255,255,.016);
+  --barcs-skeleton-from:#1B1A26;--barcs-skeleton-to:#282636;
+  --barcs-ring:0 0 0 2px rgba(168,85,247,.45);
+  --barcs-shadow-2:0 4px 12px rgba(0,0,0,.5);
+  --barcs-shadow-pop:0 10px 28px rgba(0,0,0,.62);
+  --barcs-grid:rgba(255,255,255,.05);
+  /* wspólne (niezależne od motywu) */
+  --barcs-font:"Plus Jakarta Sans","Helvetica Neue",Arial,sans-serif;
+  --barcs-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+  --barcs-ease:cubic-bezier(.2,.8,.3,1);
+  --barcs-gradient:linear-gradient(90deg,#A855F7 0%,#4ADE80 100%);
+}
+
+.barcs-light{
+  /* ---- LIGHT ----
+     Hierarchia powierzchni jest ODWRÓCONA: w ciemnym sidebar jest najciemniejszy,
+     w jasnym obszar roboczy jest biały, a sidebar dostaje fioletowy odcień —
+     biały rail na białej treści by zniknął.
+     Akcenty schodzą o 2-3 stopnie: #A855F7 / #4ADE80 / #22D3EE nie przechodzą
+     4.5:1 na bieli. */
+  --barcs-app:#FFFFFF;--barcs-sidebar:#F4F1FD;--barcs-panel:#FFFFFF;--barcs-card:#FFFFFF;
+  --barcs-raised:#FAF9FD;--barcs-hover:#F1EEFB;--barcs-active:#E7E1F8;
+  --barcs-border-subtle:#EAE7F4;--barcs-border:#DCD8EA;--barcs-border-strong:#B4B0C6;
+  --barcs-text-strong:#14131C;--barcs-text:#2E2C3D;--barcs-muted:#5E5A75;--barcs-dim:#837FA0;
+  --barcs-accent:#9333EA;--barcs-accent-hover:#7E22CE;--barcs-accent-press:#6B21A8;
+  --barcs-positive:#15803D;--barcs-negative:#B91C1C;--barcs-warning:#A16207;--barcs-info:#0E7490;
+  --barcs-highlight:rgba(21,128,61,.18);
+  --barcs-selected:rgba(147,51,234,.10);--barcs-accent-border:#9333EA;
+  /* aktywna pozycja nawigacji na PEŁNYM wypełnieniu — 10% tint na bieli czyta
+     się jak przypadek, nie jak wybór */
+  --barcs-nav-active-bg:#9333EA;--barcs-nav-active-fg:#FFFFFF;
+  --barcs-thead:#F7F6FB;
+  /* tooltip się odwraca: ciemny panel na jasnej stronie */
+  --barcs-tooltip:#14131C;--barcs-tooltip-fg:#EDEBF5;
+  --barcs-track:#DEDBE9;--barcs-zebra:rgba(20,19,28,.022);
+  --barcs-skeleton-from:#ECEAF3;--barcs-skeleton-to:#E1DEEC;
+  --barcs-ring:0 0 0 2px rgba(147,51,234,.35);
+  --barcs-shadow-2:0 4px 12px rgba(20,19,28,.10);
+  --barcs-shadow-pop:0 10px 28px rgba(20,19,28,.16);
+  --barcs-grid:rgba(20,19,28,.07);
+}
+
+/* CEL: globalna typografia i tło. Przejście 180ms, bo zmiana motywu ma być
+   czytelna jako decyzja, a nie mignięcie. */
+html,body,[class*="css"],.stApp{font-family:var(--barcs-font);color:var(--barcs-text)}
+.stApp{background:var(--barcs-app);transition:background-color 180ms var(--barcs-ease),color 180ms var(--barcs-ease)}
+[data-testid="stAppViewContainer"]{background:var(--barcs-app)}
+/* CEL: color-scheme, żeby natywne kontrolki i scrollbary przeglądarki nadążyły. */
+.barcs-dark{color-scheme:dark}
+.barcs-light{color-scheme:light}
+[data-testid="stHeader"]{background:transparent;height:0}
+
+/* CEL: sidebar ciemniejszy niż aplikacja — głębia to jasność, nie cień. */
+[data-testid="stSidebar"]{background:var(--barcs-sidebar);border-right:1px solid var(--barcs-border-subtle)}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:20px}
+
+/* CEL: skala nagłówków z design systemu. */
+h1,[data-testid="stMarkdownContainer"] h1{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--barcs-text-strong);margin:0 0 6px}
+h2,[data-testid="stMarkdownContainer"] h2{font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--barcs-text-strong)}
+h3,[data-testid="stMarkdownContainer"] h3{font-size:16px;font-weight:600;color:var(--barcs-text-strong)}
+p,[data-testid="stMarkdownContainer"] p,li{font-size:13px;line-height:1.5;color:var(--barcs-text);text-wrap:pretty}
+[data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] p{font-size:12px;color:var(--barcs-muted)}
+code,kbd{font-family:var(--barcs-mono);font-size:12px;background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);border-radius:3px;padding:2px 5px;color:var(--barcs-text)}
+a{color:#D8B4FE;text-decoration:none}
+a:hover{color:#E9D5FF;text-decoration:underline;text-underline-offset:2px}
+
+/* CEL: zakładki — podkreślenie akcentem, bez pigułek. */
+[data-testid="stTabs"] [role="tablist"]{gap:20px;border-bottom:1px solid var(--barcs-border)}
+[data-testid="stTabs"] [role="tab"]{height:34px;padding:0 2px;background:transparent;border:none;
+  border-bottom:2px solid transparent;color:var(--barcs-muted);font-size:13px;font-weight:400;
+  transition:color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease)}
+[data-testid="stTabs"] [role="tab"]:hover{color:var(--barcs-text-strong)}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"]{color:var(--barcs-text-strong);font-weight:600;border-bottom-color:var(--barcs-accent)}
+/* CEL: gdy nawigacja jest listą w sidebarze (a nie zakładkami) — aktywna pozycja. */
+.barcs-nav-item{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;border-radius:5px;
+  font-size:13px;color:var(--barcs-muted);border:1px solid transparent;text-decoration:none}
+.barcs-nav-item:hover{background:var(--barcs-hover);color:var(--barcs-text-strong)}
+.barcs-nav-item--active{background:var(--barcs-nav-active-bg);color:var(--barcs-nav-active-fg);
+  border-color:var(--barcs-accent-border);font-weight:600}
+[data-testid="stTabs"] [data-baseweb="tab-highlight"]{background:var(--barcs-accent)}
+
+/* CEL: przyciski — 30px, promień 5px, press = 0.5px w dół (bez kurczenia). */
+.stButton>button,.stDownloadButton>button,.stFormSubmitButton>button{
+  min-height:30px;padding:0 11px;border-radius:5px;
+  font-family:var(--barcs-font);font-size:12px;font-weight:600;letter-spacing:-.01em;
+  background:var(--barcs-raised);color:var(--barcs-text-strong);border:1px solid var(--barcs-border);
+  transition:background-color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease),transform 80ms var(--barcs-ease)}
+.stButton>button:hover,.stDownloadButton>button:hover{background:var(--barcs-hover);border-color:var(--barcs-border-strong);color:var(--barcs-text-strong)}
+.stButton>button:active,.stDownloadButton>button:active{transform:translateY(.5px)}
+.stButton>button:focus-visible,.stDownloadButton>button:focus-visible{box-shadow:var(--barcs-ring);outline:none}
+.stButton>button:disabled{opacity:.42;cursor:not-allowed}
+/* CEL: primary = jedna akcja commitująca na widok. */
+.stButton>button[kind="primary"],.stFormSubmitButton>button{background:var(--barcs-accent);border-color:var(--barcs-accent);color:#fff}
+.stButton>button[kind="primary"]:hover,.stFormSubmitButton>button:hover{background:var(--barcs-accent-hover);border-color:var(--barcs-accent-hover)}
+.stButton>button[kind="primary"]:active{background:var(--barcs-accent-press)}
+
+/* CEL: inputy — 5px promień, focus tylko ringiem. */
+[data-baseweb="input"],[data-baseweb="select"]>div,[data-baseweb="textarea"],.stTextInput input,.stNumberInput input{
+  background:var(--barcs-card)!important;border:1px solid #302E40!important;border-radius:5px!important;
+  color:var(--barcs-text-strong)!important;font-family:var(--barcs-font);font-size:13px;
+  transition:border-color 120ms var(--barcs-ease)}
+[data-baseweb="input"]:focus-within,[data-baseweb="select"]>div:focus-within,[data-baseweb="textarea"]:focus-within{
+  border-color:var(--barcs-accent-hover)!important;box-shadow:var(--barcs-ring)}
+/* CEL: cokolwiek liczbowe lub tickerowe — mono z tabular-nums. */
+.stNumberInput input,.stTextInput input[aria-label*="icker"],.stTextInput input[aria-label*="Ticker"]{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+[data-testid="stWidgetLabel"] label,[data-testid="stWidgetLabel"] p{font-size:12px;font-weight:500;color:var(--barcs-muted)}
+
+/* CEL: suwaki — wartości nad torem w fiolecie, mono. */
+[data-testid="stSlider"] [data-baseweb="slider"] [role="slider"]{
+  background:var(--barcs-accent-hover);border:2px solid var(--barcs-app);box-shadow:0 1px 2px rgba(0,0,0,.45)}
+[data-testid="stSlider"] [data-testid="stTickBar"],[data-testid="stSlider"] [data-testid="stThumbValue"]{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:12px;color:#D8B4FE}
+[data-testid="stSlider"] [data-baseweb="slider"] div[data-testid]{background:var(--barcs-accent)}
+
+/* CEL: checkbox / radio / toggle — akcent na stanie włączonym. */
+[data-testid="stCheckbox"] input:checked+div,[data-baseweb="checkbox"] [data-checked="true"]{background:var(--barcs-accent)!important;border-color:var(--barcs-accent)!important}
+[data-testid="stCheckbox"] label p,[data-testid="stRadio"] label p{font-size:13px;color:var(--barcs-text)}
+[data-baseweb="radio"] [data-checked="true"]{border-color:var(--barcs-accent)!important;background:var(--barcs-accent)!important}
+
+/* CEL: multiselect — wybrane wartości jako wypełnione fioletowe chipy, promień 3px. */
+[data-baseweb="tag"]{background:var(--barcs-accent)!important;border-radius:3px!important;
+  font-family:var(--barcs-font);font-size:12px;font-weight:500;color:#fff!important;height:22px}
+[data-baseweb="tag"] svg{fill:rgba(255,255,255,.8)}
+
+/* CEL: przełącznik motywu w top barze — st.toggle ubrany w ikonę. */
+.barcs-theme-row{display:flex;align-items:center;gap:6px;color:var(--barcs-muted)}
+
+/* CEL: metryki jako karty — bez cienia, promień 8px. */
+[data-testid="stMetric"]{background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);
+  border-radius:8px;padding:16px;box-shadow:none}
+[data-testid="stMetricLabel"],[data-testid="stMetricLabel"] p{font-size:10px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim)}
+[data-testid="stMetricValue"]{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;
+  font-size:21px;font-weight:600;color:var(--barcs-text-strong)}
+[data-testid="stMetricDelta"]{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:11px}
+[data-testid="stMetricDelta"] svg{display:none} /* CEL: kierunek niesie kolor, nie strzałka Streamlita */
+
+/* CEL: tabele i dataframe'y — gęste wiersze, mono w liczbach, nagłówki uppercase 10px. */
+[data-testid="stDataFrame"],[data-testid="stTable"]{border:1px solid var(--barcs-border-subtle);border-radius:6px;overflow:hidden}
+[data-testid="stDataFrame"] [role="columnheader"],[data-testid="stTable"] th{
+  background:var(--barcs-thead);font-family:var(--barcs-font);font-size:10px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim);
+  border-bottom:1px solid var(--barcs-border)}
+[data-testid="stDataFrame"] [role="gridcell"],[data-testid="stTable"] td{
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:12px;
+  color:var(--barcs-text);border-bottom:1px solid var(--barcs-border-subtle)}
+[data-testid="stTable"] tbody tr:nth-child(even){background:var(--barcs-zebra)}
+[data-testid="stTable"] tbody tr:hover{background:var(--barcs-hover)}
+/* CEL: tabela porównywarki (Styler.to_html) — siatka i podświetlenie najlepszej wartości. */
+.barcs-comparison table{border-collapse:collapse;width:100%}
+.barcs-comparison th,.barcs-comparison td{border:1px solid var(--barcs-border);padding:6px 12px;font-size:.9rem}
+.barcs-comparison th{background:var(--barcs-thead);font-family:var(--barcs-font);font-size:10px;
+  font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim);text-align:right}
+.barcs-comparison th:first-child{text-align:left}
+.barcs-comparison td{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;text-align:right}
+.barcs-comparison td:first-child{font-family:var(--barcs-font);text-align:left;color:var(--barcs-text);white-space:nowrap}
+.barcs-comparison td.barcs-best{background:var(--barcs-highlight);font-weight:600}
+
+/* CEL: expandery = panele. Promień 6px, bez cienia. */
+[data-testid="stExpander"]{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;box-shadow:none}
+[data-testid="stExpander"] summary{font-size:13px;color:var(--barcs-text);padding:9px 11px}
+[data-testid="stExpander"] summary:hover{background:var(--barcs-hover)}
+
+/* CEL: alerty — cicha alfa hue na ciemnym tle, bez lewego paska akcentu. */
+[data-testid="stAlert"]{border-radius:6px;border-width:1px;font-size:13px;padding:10px 12px}
+[data-testid="stNotification"]{border-radius:6px}
+div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-baseweb="notification"]{
+  background:var(--barcs-panel);border:1px solid var(--barcs-info);color:var(--barcs-text)}
+.stAlert[data-testid="stAlert"] p{color:var(--barcs-text)}
+
+/* CEL: wykresy Plotly siedzą na powierzchni panelu. */
+[data-testid="stPlotlyChart"]{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;padding:4px}
+.js-plotly-plot .modebar{background:transparent!important}
+.js-plotly-plot .modebar-btn path{fill:var(--barcs-muted)!important}
+
+/* CEL: pasek postępu i spinner w akcencie marki. */
+[data-testid="stProgress"]>div>div>div{background:var(--barcs-gradient)}
+[data-testid="stSpinner"] i{border-top-color:var(--barcs-accent)!important}
+
+/* CEL: nagłówek marki (renderowany przez brand_header()). */
+.barcs-brand{display:flex;align-items:center;gap:10px;margin:0 0 4px}
+.barcs-brand img{width:34px;height:34px;border-radius:999px;flex:0 0 auto}
+.barcs-brand .barcs-wordmark{font-family:var(--barcs-font);font-weight:800;font-size:30px;letter-spacing:-.02em;
+  background:var(--barcs-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.barcs-brand .barcs-tagline{font-size:12px;color:var(--barcs-muted);margin-left:auto}
+
+/* CEL: pigułki statusu i znaczniki ramion. */
+.barcs-badge{display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 7px;
+  border-radius:999px;font-size:11px;font-weight:500;white-space:nowrap;border:1px solid}
+.barcs-badge--positive{background:var(--barcs-highlight);color:var(--barcs-positive);border-color:var(--barcs-positive)}
+.barcs-badge--warning{background:var(--barcs-warning);color:#fff;border-color:var(--barcs-warning);opacity:.9}
+.barcs-badge--accent{background:var(--barcs-selected);color:var(--barcs-accent-hover);border-color:var(--barcs-accent-border)}
+.barcs-badge--negative{background:transparent;color:var(--barcs-negative);border-color:var(--barcs-negative)}
+
+/* CEL: ikony Lucide jako maska — dziedziczą currentColor. */
+.barcs-icon{display:inline-block;width:16px;height:16px;background:currentColor;vertical-align:-3px;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain}
+
+/* CEL: liczby zawsze tabularne, gdy oznaczone. */
+.barcs-num{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+.barcs-pos{color:var(--barcs-positive)}
+.barcs-neg{color:var(--barcs-negative)}
+.barcs-flat{color:var(--barcs-muted)}
+.barcs-missing{color:var(--barcs-dim)}
+
+/* CEL: scrollbary w rampie neutralnej. */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--barcs-active);border-radius:999px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--barcs-border-strong);background-clip:content-box}
+
+/* CEL: ukryj brandowanie Streamlita — to jest produkt BARCS. */
+#MainMenu,footer,[data-testid="stToolbar"]{visibility:hidden;height:0}
+
+/* CEL: szacunek dla prefers-reduced-motion. */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0ms!important;animation-duration:0ms!important}}
+
+
+/* ===========================================================================
+   DODATEK DLA PROTOTYPU W DASH.
+   Klasy layoutu, których Streamlit nie potrzebował, bo nie umiał ich ułożyć:
+   lewa szyna, sidebar filtrów, kafelki, plus motyw AG Grid.
+   =========================================================================== */
+
+.barcs-app{display:flex;min-height:100vh;background:var(--barcs-app);color:var(--barcs-text);font-family:var(--barcs-font);font-size:13px;line-height:1.5}
+.barcs-shell{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* --- lewa szyna --- */
+.barcs-sidebar{width:216px;flex:0 0 auto;background:var(--barcs-sidebar);border-right:1px solid var(--barcs-border-subtle);padding:8px 8px 20px}
+.barcs-nav-group{padding:6px 8px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim)}
+.barcs-nav-item{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;margin-bottom:2px;border-radius:5px;
+  font-size:13px;color:var(--barcs-muted);border:1px solid transparent;cursor:pointer;
+  transition:background-color 120ms var(--barcs-ease),color 120ms var(--barcs-ease)}
+.barcs-nav-item:hover{background:var(--barcs-hover);color:var(--barcs-text-strong)}
+.barcs-nav-item--active{background:var(--barcs-nav-active-bg);color:var(--barcs-nav-active-fg);border-color:var(--barcs-accent-border);font-weight:600}
+
+/* --- top bar --- */
+.barcs-topbar{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-bottom:1px solid var(--barcs-border-subtle)}
+.barcs-crumb-sep{color:var(--barcs-dim)}
+.barcs-crumb{font-size:13px;font-weight:600;color:var(--barcs-text-strong)}
+.barcs-spacer{flex:1}
+.barcs-search{width:300px;height:30px;padding:0 10px;background:var(--barcs-panel);color:var(--barcs-text-strong);
+  border:1px solid var(--barcs-border-subtle);border-radius:6px;font-family:var(--barcs-font);font-size:13px;outline:none}
+.barcs-search:focus{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
+
+/* --- korpus: sidebar filtrów + treść --- */
+.barcs-body{flex:1;min-height:0;display:flex}
+.barcs-filters{width:286px;flex:0 0 auto;padding:16px;background:var(--barcs-panel);border-right:1px solid var(--barcs-border-subtle);overflow-y:auto}
+.barcs-filters h3{margin:24px 0 16px;font-size:16px;font-weight:600;color:var(--barcs-text-strong)}
+.barcs-note{margin:16px 0 20px;font-size:12px;color:var(--barcs-muted);text-wrap:pretty}
+.barcs-main{flex:1;min-width:0;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.barcs-main h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--barcs-text-strong)}
+.barcs-lede{margin:6px 0 0;font-size:13px;color:var(--barcs-muted);text-wrap:pretty}
+
+/* --- filtr zakresowy --- */
+.barcs-filter{margin-bottom:20px}
+.barcs-filter-head{display:flex;align-items:center;gap:5px}
+.barcs-filter-label{font-size:12px;font-weight:500;color:var(--barcs-text)}
+.barcs-help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:999px;
+  border:1px solid var(--barcs-border);color:var(--barcs-dim);font-size:9px;cursor:help}
+.barcs-filter-values{display:flex;justify-content:space-between;margin:6px 0 2px;
+  font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--barcs-accent-hover)}
+
+/* CEL: RangeSlider Dasha (rc-slider) — tor, wypełnienie, uchwyty. */
+.barcs-slider .rc-slider-rail{background:var(--barcs-track);height:3px}
+.barcs-slider .rc-slider-track{background:var(--barcs-accent);height:3px}
+.barcs-slider .rc-slider-handle{width:12px;height:12px;margin-top:-5px;background:var(--barcs-accent-hover);
+  border:2px solid var(--barcs-panel);box-shadow:0 1px 2px rgba(0,0,0,.45);opacity:1}
+.barcs-slider .rc-slider-handle:focus,.barcs-slider .rc-slider-handle-dragging{box-shadow:var(--barcs-ring)!important}
+
+/* --- kafelki KPI --- */
+.barcs-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.barcs-tile{padding:16px;background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);border-radius:8px}
+.barcs-tile-label{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--barcs-dim)}
+.barcs-tile-value{margin-top:5px;font-family:var(--barcs-mono);font-variant-numeric:tabular-nums;font-size:21px;font-weight:600;color:var(--barcs-text-strong)}
+.barcs-tile-value.accent{color:var(--barcs-accent-hover)}
+.barcs-tile-value.positive{color:var(--barcs-positive)}
+.barcs-tile-value.negative{color:var(--barcs-negative)}
+.barcs-tile-hint{margin-top:5px;min-height:16px;font-size:12px;color:var(--barcs-dim)}
+
+/* --- przyciski i callout w wariancie klasowym --- */
+.barcs-btn{height:30px;padding:0 11px;border-radius:5px;font-family:var(--barcs-font);font-size:12px;font-weight:600;
+  letter-spacing:-.01em;cursor:pointer;transition:background-color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease),transform 80ms var(--barcs-ease)}
+.barcs-btn:active{transform:translateY(.5px)}
+.barcs-btn--secondary{background:var(--barcs-raised);color:var(--barcs-text-strong);border:1px solid var(--barcs-border)}
+.barcs-btn--secondary:hover{background:var(--barcs-hover);border-color:var(--barcs-border-strong)}
+.barcs-btn--primary{background:var(--barcs-accent);color:#fff;border:1px solid var(--barcs-accent)}
+.barcs-btn--full{width:100%}
+.barcs-callout{padding:10px 12px;border-radius:6px;font-size:13px;border:1px solid}
+.barcs-callout--info{background:var(--barcs-panel);border-color:var(--barcs-info);color:var(--barcs-text)}
+.barcs-callout--warning{background:var(--barcs-panel);border-color:var(--barcs-warning);color:var(--barcs-text)}
+
+/* ---------------------------------------------------------------------------
+   AG GRID — motyw BARCS.
+   Nazwa klasy musi zaczynać się od "ag-theme-", inaczej AG Grid jej nie uzna.
+   --------------------------------------------------------------------------- */
+.ag-theme-barcs{
+  --ag-background-color:var(--barcs-panel);
+  --ag-header-background-color:var(--barcs-thead);
+  --ag-odd-row-background-color:var(--barcs-zebra);
+  --ag-row-hover-color:var(--barcs-hover);
+  --ag-selected-row-background-color:var(--barcs-selected);
+  --ag-border-color:var(--barcs-border-subtle);
+  --ag-row-border-color:var(--barcs-border-subtle);
+  --ag-header-foreground-color:var(--barcs-dim);
+  --ag-foreground-color:var(--barcs-text);
+  --ag-font-family:var(--barcs-font);
+  --ag-font-size:13px;
+  --ag-grid-size:4px;
+  --ag-borders:1px solid;
+  --ag-border-radius:6px;
+  --ag-cell-horizontal-padding:10px;
+  border:1px solid var(--barcs-border-subtle);border-radius:6px;overflow:hidden}
+.ag-theme-barcs .ag-header-cell-text{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+.ag-theme-barcs .ag-header{border-bottom:1px solid var(--barcs-border)}
+/* CEL: każda liczba w mono z tabular-nums — reguła nienegocjowalna. */
+.ag-theme-barcs .barcs-cell-num,.ag-theme-barcs .barcs-cell-mono{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+.ag-theme-barcs .barcs-cell-mono{color:var(--barcs-text-strong)}
+.ag-theme-barcs .barcs-pos{color:var(--barcs-positive)}
+.ag-theme-barcs .barcs-neg{color:var(--barcs-negative)}
+.ag-theme-barcs .barcs-flat{color:var(--barcs-muted)}
+
+
+/* ===========================================================================
+   KLASY UZUPEŁNIAJĄCE dla scaffoldu (src/ui/widgets.py, src/ui/shell.py).
+   Prototyp ich nie potrzebował, bo miał tylko jeden widok.
+   =========================================================================== */
+
+/* --- marka --- */
+.barcs-brand{display:flex;align-items:center;gap:9px;height:var(--topbar-h,44px);padding:0 10px;margin-bottom:4px}
+.barcs-logo{border-radius:999px;flex:0 0 auto}
+.barcs-wordmark{font-family:var(--barcs-font);font-weight:800;font-size:19px;letter-spacing:-.02em;
+  background:var(--barcs-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* --- szyna: etykiety i stopka --- */
+.barcs-nav-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barcs-nav-footer{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding:12px 8px 0;border-top:1px solid var(--barcs-border-subtle)}
+.barcs-nav-footnote{font-size:12px;color:var(--barcs-dim)}
+.barcs-sidebar{display:flex;flex-direction:column}
+
+/* --- top bar: okruszki, szukanie, przyciski ikonowe --- */
+.barcs-crumbs{display:flex;align-items:center;gap:7px}
+.barcs-crumb--muted{color:var(--barcs-muted);font-weight:400}
+.barcs-search{display:flex;align-items:center;gap:8px;width:320px;height:30px;padding:0 10px;
+  background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;color:var(--barcs-dim)}
+.barcs-search:focus-within{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
+.barcs-search-input{flex:1;min-width:0;background:transparent;border:none;outline:none;
+  color:var(--barcs-text-strong);font-family:var(--barcs-font);font-size:13px}
+.barcs-iconbtn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 auto;
+  background:transparent;border:1px solid transparent;border-radius:5px;color:var(--barcs-muted);cursor:pointer;
+  transition:var(--barcs-ease) 120ms;transition-property:background-color,color,border-color}
+.barcs-iconbtn:hover{background:var(--barcs-hover);color:var(--barcs-text-strong)}
+
+/* --- shell / content --- */
+.barcs-content{flex:1;min-height:0;display:flex;overflow:hidden}
+.barcs-body{flex:1;min-height:0;display:flex;overflow:hidden}
+.barcs-main{flex:1;min-width:0;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.barcs-main h2{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--barcs-text-strong)}
+.barcs-list-panel{width:340px;flex:0 0 auto;display:flex;flex-direction:column;min-height:0;
+  background:var(--barcs-panel);border-right:1px solid var(--barcs-border-subtle)}
+.barcs-toolbar{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.barcs-summary{font-size:13px;color:var(--barcs-text)}
+.barcs-filter-stack{display:flex;flex-direction:column;gap:20px}
+
+/* --- kafelki: wiersz wartość+jednostka --- */
+.barcs-tile-row{display:flex;align-items:baseline;gap:5px;margin-top:5px}
+.barcs-tile-unit{font-family:var(--barcs-mono);font-size:12px;color:var(--barcs-dim)}
+.barcs-tile-label{display:flex;align-items:center;gap:6px}
+
+/* --- badge: kropka i warianty --- */
+.barcs-badge-dot{width:5px;height:5px;border-radius:999px;background:currentColor;flex:0 0 auto}
+.barcs-badge--info{background:transparent;color:var(--barcs-info);border-color:var(--barcs-info)}
+
+/* --- callout: układ wewnętrzny --- */
+.barcs-callout{display:flex;gap:10px;align-items:flex-start}
+.barcs-callout-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.barcs-callout-title{font-size:13px;font-weight:600;color:var(--barcs-text-strong)}
+.barcs-callout-body{font-size:13px;color:var(--barcs-text);text-wrap:pretty}
+.barcs-callout-action{flex:0 0 auto}
+.barcs-callout--negative{background:var(--barcs-panel);border-color:var(--barcs-negative);color:var(--barcs-text)}
+.barcs-callout--positive{background:var(--barcs-panel);border-color:var(--barcs-positive);color:var(--barcs-text)}
+.barcs-callout--accent{background:var(--barcs-selected);border-color:var(--barcs-accent-border);color:var(--barcs-text)}
+/* Ikona callloutu przyjmuje kolor tonu — stąd te reguły, a nie inline color. */
+.barcs-callout--info .barcs-icon{background:var(--barcs-info)}
+.barcs-callout--warning .barcs-icon{background:var(--barcs-warning)}
+.barcs-callout--negative .barcs-icon{background:var(--barcs-negative)}
+.barcs-callout--positive .barcs-icon{background:var(--barcs-positive)}
+.barcs-callout--accent .barcs-icon{background:var(--barcs-accent-hover)}
+
+/* --- empty state --- */
+.barcs-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:56px 20px;text-align:center;background:var(--barcs-panel);
+  border:1px dashed var(--barcs-border);border-radius:8px}
+.barcs-empty--compact{padding:20px}
+.barcs-empty .barcs-icon{background:var(--barcs-border-strong)}
+.barcs-empty-title{font-size:16px;font-weight:600;color:var(--barcs-text-strong)}
+.barcs-empty-desc{font-size:13px;color:var(--barcs-muted);max-width:380px;text-wrap:pretty}
+.barcs-empty-action{margin-top:4px}
+
+/* --- przyciski: brakujące warianty --- */
+.barcs-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.barcs-btn--ghost{background:transparent;color:var(--barcs-muted);border:1px solid transparent}
+.barcs-btn--ghost:hover{background:var(--barcs-hover);color:var(--barcs-text-strong)}
+.barcs-btn--outline{background:transparent;color:var(--barcs-accent-hover);border:1px solid var(--barcs-accent)}
+.barcs-btn--outline:hover{background:var(--barcs-selected)}
+.barcs-btn--danger{background:transparent;color:var(--barcs-negative);border:1px solid var(--barcs-negative)}
+.barcs-btn--danger:hover{background:var(--barcs-panel)}
+
+/* --- inputy klasowe (dcc.Input) --- */
+.barcs-input{height:30px;padding:0 9px;background:var(--barcs-card);color:var(--barcs-text-strong);
+  border:1px solid var(--barcs-border);border-radius:5px;font-family:var(--barcs-font);font-size:13px;outline:none}
+.barcs-input:focus{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
+.barcs-input--mono{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+
+/* --- checklist (dcc.Checklist) --- */
+.barcs-checklist{display:flex;flex-direction:column;gap:8px}
+.barcs-checklist label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--barcs-text);cursor:pointer}
+.barcs-checklist input[type="checkbox"],.barcs-checklist input[type="radio"]{accent-color:var(--barcs-accent);width:14px;height:14px;margin:0}
+.barcs-checklist--row{flex-direction:row;gap:20px}
+
+/* --- Master Chart: panel firm (lista + szukanie).
+   max-height JAWNIE (nie tylko flex:1/min-height:0) - sama flexbox nie
+   wystarczyła, żeby okiełznać ~560 niewirtualizowanych wierszy: lista
+   rozpychała CAŁĄ stronę zamiast przewijać się we własnym zakresie. */
+.barcs-ticker-list{max-height:calc(100vh - 150px);overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:2px}
+.barcs-list-panel{max-height:100vh;overflow:hidden}
+.barcs-list-panel .barcs-input{margin:12px 12px 0}
+
+/* --- pasek punktów scoringu --- */
+.barcs-scorebar{display:flex;align-items:center;gap:8px}
+.barcs-scorebar-track{flex:1;min-width:60px;height:6px;background:var(--barcs-track);border-radius:999px;overflow:hidden}
+.barcs-scorebar-fill{height:100%;background:var(--barcs-gradient)}
+.barcs-scorebar-label{min-width:44px;text-align:right;color:var(--barcs-text-strong);font-size:12px}
+
+/* --- rozwijane sekcje (Dane Surowe) --- */
+.barcs-disclosure-stack{display:flex;flex-direction:column;gap:8px}
+.barcs-disclosure{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px;overflow:hidden}
+.barcs-disclosure>summary{display:flex;align-items:center;gap:9px;padding:9px 11px;font-size:13px;
+  color:var(--barcs-text);cursor:pointer;list-style:none}
+.barcs-disclosure>summary::-webkit-details-marker{display:none}
+.barcs-disclosure>summary:hover{background:var(--barcs-hover)}
+.barcs-disclosure[open]>summary{border-bottom:1px solid var(--barcs-border-subtle)}
+.barcs-disclosure-body{padding:12px}
+
+/* --- liczby --- */
+.barcs-num{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
+.barcs-missing{color:var(--barcs-dim)}
+
+/* --- etykieta liczności obok tytułu (Dane Surowe: "63 pól") --- */
+.barcs-muted-inline{margin-left:auto;font-size:12px;color:var(--barcs-dim);font-family:var(--barcs-mono)}
+
+/* --- karty ramion scoringu (Scoring Ramion Ośmiornicy) --- */
+.barcs-arm-stack{display:flex;flex-direction:column;gap:12px}
+.barcs-arm-card{padding:16px;background:var(--barcs-card);border:1px solid var(--barcs-border-subtle);border-radius:8px}
+.barcs-arm-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.barcs-arm-controls{display:flex;gap:24px;margin-top:12px;flex-wrap:wrap}
+.barcs-arm-field{flex:1;min-width:200px}
+
+/* --- dcc.Dropdown (react-select pod spodem) — motyw BARCS.
+   Selektory Select-xxx i is-xxx pochodzą z react-select v1 (biblioteka, na
+   której oparty jest dcc.Dropdown w tej wersji Dasha) - nie są klasami BARCS. */
+.barcs-dropdown .Select-control{background:var(--barcs-card);border:1px solid var(--barcs-border);
+  border-radius:5px;min-height:30px;font-family:var(--barcs-font);font-size:13px}
+.barcs-dropdown.is-focused:not(.is-open)>.Select-control{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
+.barcs-dropdown .Select-placeholder,.barcs-dropdown .Select-input{color:var(--barcs-muted)}
+.barcs-dropdown .Select-value-label,.barcs-dropdown .Select-input>input{color:var(--barcs-text-strong)!important}
+.barcs-dropdown .Select-menu-outer{background:var(--barcs-panel);border:1px solid var(--barcs-border);
+  border-radius:6px;box-shadow:var(--barcs-shadow-pop);z-index:20}
+.barcs-dropdown .Select-option{background:var(--barcs-panel);color:var(--barcs-text)}
+.barcs-dropdown .Select-option.is-focused{background:var(--barcs-hover)}
+.barcs-dropdown .Select-option.is-selected{background:var(--barcs-selected);color:var(--barcs-text-strong)}
+.barcs-dropdown .Select-arrow{border-color:var(--barcs-dim) transparent transparent}
+.barcs-dropdown.Select--multi .Select-value{background:var(--barcs-accent)!important;border:none!important;
+  border-radius:3px;color:#fff!important}
+.barcs-dropdown.Select--multi .Select-value-label{color:#fff!important}
+.barcs-dropdown.Select--multi .Select-value-icon{border-right:1px solid rgba(255,255,255,.3)!important}
+.barcs-dropdown .Select-clear-zone,.barcs-dropdown .Select-arrow-zone{color:var(--barcs-dim)}
+
+/* --- dcc.Graph siedzi na powierzchni panelu --- */
+.js-plotly-plot,.dash-graph{background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);border-radius:6px}

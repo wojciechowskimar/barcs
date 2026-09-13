@@ -14,3 +14,10 @@ plotly>=5.22.0
 tqdm>=4.66.0
 requests>=2.31.0
 lxml>=5.0.0
+
+# Dash (migracja z Streamlita - patrz dash_migration_handoff/). Obie wersje
+# stoją obok siebie na razie: `streamlit run app.py` i `python dash_app.py`.
+# Streamlit i .streamlit/ znikną z tego pliku dopiero w kroku 7 migracji,
+# gdy wszystkie sześć widoków będzie działać w Dash.
+dash==2.18.2
+dash-ag-grid==31.3.0
