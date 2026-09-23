@@ -364,11 +364,16 @@ div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-basew
 
 /* --- marka --- */
 .barcs-brand{display:flex;align-items:center;gap:9px;height:var(--topbar-h,44px);padding:0 10px;margin-bottom:4px}
-.barcs-logo{flex:0 0 auto;object-fit:contain}
-/* CEL: dwa warianty logo (czarny/biały) w DOM-ie naraz, tylko jeden widoczny
-   naraz wg motywu - bez tego biały wariant znika na jasnym tle i odwrotnie
-   (patrz src/ui/shell.py::brand()). */
-.barcs-dark .barcs-logo--for-light,.barcs-light .barcs-logo--for-dark{display:none}
+/* CEL: logo bez własnego koloru - maskowane kształtem ośmiornicy (PNG,
+   czarne piksele na przezroczystości - jako maska liczy się tylko alfa,
+   więc ten sam plik działa w obu motywach) i wypełnione gradientem marki,
+   tak jak wordmark. Zastąpiło wcześniejsze dwa <img> czarny/biały
+   przełączane klasą motywu - patrz src/ui/shell.py::brand(). */
+.barcs-logo{flex:0 0 auto;display:inline-block;background:var(--barcs-gradient);
+  -webkit-mask-image:url(/assets/logo_dark_on_light.png);mask-image:url(/assets/logo_dark_on_light.png);
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center}
 .barcs-wordmark{font-family:var(--barcs-font);font-weight:800;font-size:19px;letter-spacing:-.02em;
   background:var(--barcs-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
 

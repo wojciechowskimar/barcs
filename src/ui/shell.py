@@ -28,21 +28,17 @@ NAV_SECTIONS = [
 def brand(size: int = 24, wordmark: bool = True) -> html.Div:
     """Logo + wordmark.
 
-    Logo to linia bez tła (PNG z przezroczystością) - dwa warianty, czarny
-    i biały, przełączane WYŁĄCZNIE CSS-em (.barcs-logo--for-dark/--for-light
-    w assets/barcs.css, sterowane klasą .barcs-dark/.barcs-light na
-    #app-root) - bez tego biały wariant znikałby na jasnym tle i odwrotnie.
-    Oba <img> są zawsze w DOM-ie, widoczny jest tylko jeden na raz.
-
-    Gradient wordmarku jest ten sam w obu motywach — to znak marki, nie
-    element interfejsu.
+    Logo to kształt bez własnego koloru - maskowany CSS-em (mask-image z
+    logo_dark_on_light.png, który ma czyste piksele czarny/przezroczysty,
+    więc jako maska działa niezależnie od motywu) i wypełniany gradientem
+    marki (ten sam mechanizm co icon() w widgets.py, tylko background
+    zamiast currentColor). To ZASTĄPIŁO wcześniejsze dwa <img> (czarny/biały,
+    przełączane klasą .barcs-dark/.barcs-light) - user poprosił, żeby
+    ośmiornica przybrała kolory BARCS, więc zamiast czerni/bieli dostaje
+    ten sam fiolet->zieleń co wordmark, w OBU motywach (patrz komentarz przy
+    .barcs-wordmark - gradient marki celowo nie zależy od motywu).
     """
-    children = [
-        html.Img(src="/assets/logo_light_on_dark.png", alt="BARCS", width=size, height=size,
-                 className="barcs-logo barcs-logo--for-dark"),
-        html.Img(src="/assets/logo_dark_on_light.png", alt="BARCS", width=size, height=size,
-                 className="barcs-logo barcs-logo--for-light"),
-    ]
+    children = [html.Span(className="barcs-logo", style={"width": f"{size}px", "height": f"{size}px"})]
     if wordmark:
         children.append(html.Span("BARCS", className="barcs-wordmark"))
     return html.Div(children, className="barcs-brand")
