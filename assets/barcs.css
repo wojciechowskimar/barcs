@@ -525,6 +525,13 @@ div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-basew
 .barcs-list-panel{max-height:100vh;overflow:hidden}
 .barcs-list-panel .barcs-input{margin:12px 12px 0}
 
+/* --- gwiazdka "ulubione" w wierszu tickera (Master Chart) --- */
+.barcs-fav-star{flex:0 0 auto;margin-left:auto;padding:2px;border-radius:4px;color:var(--barcs-dim);
+  opacity:.45;transition:opacity 120ms var(--barcs-ease),color 120ms var(--barcs-ease)}
+.barcs-nav-item:hover .barcs-fav-star{opacity:1}
+.barcs-fav-star:hover{background:var(--barcs-active);color:var(--barcs-text-strong)}
+.barcs-fav-star--active{opacity:1;color:var(--barcs-warning)}
+
 /* --- pasek punktów scoringu --- */
 .barcs-scorebar{display:flex;align-items:center;gap:8px}
 .barcs-scorebar-track{flex:1;min-width:60px;height:6px;background:var(--barcs-track);border-radius:999px;overflow:hidden}

@@ -201,7 +201,30 @@ def layout() -> html.Div:
     )
 
 
+_PERCENT_BY_KEY = {key: percent for key, _label, percent, _help in FILTERS}
+_NO_MARKET_MATCH = ["__none_selected__"]  # nie pasuje do żadnej realnej wartości markets — patrz apply_filters
+
+
 def register_callbacks(app) -> None:
+
+    @app.callback(
+        Output({"type": "filter-out", "key": dash.ALL}, "children"),
+        Input({"type": "screener-filter", "key": dash.ALL}, "value"),
+    )
+    def sync_filter_labels(values):
+        # BEZ tego callbacku etykiety nad suwakami pokazywały na zawsze
+        # POCZĄTKOWE min/max z bazy, mimo że przeciąganie realnie filtrowało
+        # tabelę - user widział "3.48  539.48" cały czas i słusznie uznał,
+        # że suwak "nic nie robi", bo jedyny widoczny dowód (etykiety) się
+        # nie zmieniał. Ten output istniał w range_filter() od początku
+        # (id={"type":"filter-out",...}), ale nikt go nigdy nie ustawiał.
+        keys = [item["id"]["key"] for item in dash.ctx.inputs_list[0]]
+        out = []
+        for key, value in zip(keys, values):
+            lo, hi = value
+            fmt = fmt_percent if _PERCENT_BY_KEY[key] else fmt_ratio
+            out.append([html.Span(fmt(lo)), html.Span(fmt(hi))])
+        return out
 
     @app.callback(
         Output(GRID, "rowData"),
@@ -220,7 +243,12 @@ def register_callbacks(app) -> None:
         keys = [item["id"]["key"] for item in dash.ctx.inputs_list[0]]
         ranges = {k: tuple(v) for k, v in zip(keys, values) if v}
 
-        df = queries.screener(ranges, markets=markets or None)
+        # markets=[] (user odznaczył OBIE giełdy) musi dać ZERO wyników, nie
+        # "brak filtra rynku" - `markets or None` mylił te dwa przypadki
+        # (pusta lista jest falsy, więc trafiała w tę samą gałąź co "filtr
+        # rynku w ogóle nie ma zastosowania"), więc odznaczenie wszystkiego
+        # pokazywało całą, niefiltrowaną tabelę zamiast pustej.
+        df = queries.screener(ranges, markets=markets if markets else _NO_MARKET_MATCH)
         stats = queries.cache_stats()
 
         tiles = [
@@ -270,5 +298,5 @@ def register_callbacks(app) -> None:
     def export_csv(_n, values, markets):
         keys = [item["id"]["key"] for item in dash.ctx.states_list[0]]
         ranges = {k: tuple(v) for k, v in zip(keys, values) if v}
-        df = queries.screener(ranges, markets=markets or None)
+        df = queries.screener(ranges, markets=markets if markets else _NO_MARKET_MATCH)
         return dcc.send_data_frame(df.to_csv, "stock_screener_wyniki.csv", index=False, encoding="utf-8-sig")

@@ -215,6 +215,7 @@ ICONS = {
     "raw_data": "database",
     # znaczenia
     "home": "house",
+    "favorite": "star",
     "arm": "git-fork",
     "network": "globe",
     "warning": "triangle-alert",

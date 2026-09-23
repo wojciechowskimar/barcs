@@ -31,7 +31,7 @@ from dash import Input, Output, State, dcc, html
 
 from src.data import queries
 from src.ui.tokens import style_figure, tokens
-from src.ui.widgets import callout, section_title
+from src.ui.widgets import callout, icon, section_title
 
 TICKER_STORE = "master-ticker"
 SEARCH = "master-search"
@@ -41,8 +41,11 @@ FUND_CHART = "master-fund-chart"
 OVERLAYS = "master-overlays"
 METRIC = "master-metric"
 FUND_NOTE = "master-fund-note"
+FAVORITES = "master-favorites"
+FAV_INIT = "master-fav-init"
 
 TICKER_ROW = lambda ticker: {"type": "master-ticker-row", "ticker": ticker}  # noqa: E731
+FAV_STAR = lambda ticker: {"type": "master-fav-star", "ticker": ticker}  # noqa: E731
 
 MISSING_MONEY = "brak danych"
 
@@ -59,27 +62,67 @@ def _format_money(value, currency: str | None) -> str:
     return f"{value:,.0f}{suffix}"
 
 
-def _ticker_row(ticker: str, name: str, active: bool) -> html.Div:
+def _ticker_row(ticker: str, name: str, active: bool, is_favorite: bool = False) -> html.Div:
     cls = "barcs-nav-item" + (" barcs-nav-item--active" if active else "")
+    star_cls = "barcs-fav-star" + (" barcs-fav-star--active" if is_favorite else "")
     return html.Div(
-        [html.Span(ticker, className="barcs-cell-mono"), html.Span(name, className="barcs-nav-label")],
+        [
+            html.Span(ticker, className="barcs-cell-mono"),
+            html.Span(name, className="barcs-nav-label"),
+            # Klik na gwiazdkę PROPAGUJE się też do wiersza (bo to jego
+            # dziecko) - wiersz i tak zostanie zaznaczony jako aktywny.
+            # Celowo nie dławimy propagacji (wymagałoby to osobnego
+            # clientside callbacku) - dodanie do ulubionych spółki, na którą
+            # się właśnie kliknęło, to rozsądny efekt uboczny, nie błąd.
+            html.Span(icon("favorite", 13), id=FAV_STAR(ticker), n_clicks=0,
+                      className=star_cls,
+                      title="Usuń z ulubionych" if is_favorite else "Dodaj do ulubionych"),
+        ],
         id=TICKER_ROW(ticker), className=cls, n_clicks=0,
         title=name,
     )
+
+
+def _ordered_rows(brief, active_ticker: str | None, favorites: list[str]) -> list[html.Div]:
+    """Ulubione na górze (w swojej kolejności alfabetycznej), potem reszta -
+    user poprosił o sposób na "zakotwiczenie" spółki w menu bez konieczności
+    wyszukiwania jej za każdym razem. Kolejność w obrębie każdej grupy
+    zostaje taka, w jakiej przyszła z brief (alfabetyczna po tickerze)."""
+    favorites_set = set(favorites or [])
+    pinned = [r for r in brief.itertuples() if r.ticker in favorites_set]
+    rest = [r for r in brief.itertuples() if r.ticker not in favorites_set]
+    return [
+        _ticker_row(r.ticker, r.name, r.ticker == active_ticker, is_favorite=True)
+        for r in pinned
+    ] + [
+        _ticker_row(r.ticker, r.name, r.ticker == active_ticker, is_favorite=False)
+        for r in rest
+    ]
 
 
 def layout() -> html.Div:
     brief = queries.all_companies_brief()
     default_ticker = brief.iloc[0]["ticker"] if not brief.empty else None
 
+    # Ulubione dociągają się z localStorage dopiero po zamontowaniu (patrz
+    # FAV_INIT), więc pierwszy render zawsze pokazuje pełną listę bez
+    # przypięć - filter_list() przerenderuje ją momentalnie z favorites=[].
     rows = [_ticker_row(r.ticker, r.name, r.ticker == default_ticker) for r in brief.itertuples()]
 
     return html.Div(
         [
             html.Aside(
                 [
+                    # debounce=True (jak w innych polach tekstowych apki) tu jest
+                    # ZŁYM wyborem: to pole ma filtrować listę na bieżąco, jak
+                    # pisze się w wyszukiwarce. Z debounce=True Dash wysyła
+                    # wartość do Pythona DOPIERO po Enterze albo utracie
+                    # fokusu - user pisze "CDR" i patrzy na listę, która się
+                    # nie zmienia, dopóki nie kliknie gdzie indziej, więc
+                    # wygląda jak "nie da się znaleźć tej spółki" (zgłoszone
+                    # jako bug, zweryfikowane empirycznie).
                     dcc.Input(id=SEARCH, type="text", value="", placeholder="Szukaj spółki lub tickera",
-                              className="barcs-input", debounce=True),
+                              className="barcs-input", debounce=False),
                     html.Div(rows, id=TICKER_LIST, className="barcs-ticker-list"),
                 ],
                 className="barcs-list-panel",
@@ -129,6 +172,8 @@ def layout() -> html.Div:
                 className="barcs-main",
             ),
             dcc.Store(id=TICKER_STORE, data=default_ticker),
+            dcc.Store(id=FAVORITES, storage_type="memory"),
+            dcc.Interval(id=FAV_INIT, n_intervals=0, max_intervals=1, interval=1),
         ],
         className="barcs-body",
     )
@@ -256,10 +301,68 @@ def register_callbacks(app) -> None:
         Output(TICKER_LIST, "children"),
         Input(SEARCH, "value"),
         Input(TICKER_STORE, "data"),
+        Input(FAVORITES, "data"),
     )
-    def filter_list(query, active_ticker):
+    def filter_list(query, active_ticker, favorites):
         brief = queries.search_companies(query, limit=200) if query else queries.all_companies_brief()
-        return [_ticker_row(r.ticker, r.name, r.ticker == active_ticker) for r in brief.itertuples()]
+        return _ordered_rows(brief, active_ticker, favorites)
+
+    # Ulubione żyją w localStorage, nie w storage_type="local" dcc.Store -
+    # ta sama, empirycznie potwierdzona zawodność co przy motywie w
+    # dash_app.py (NIE przetrwało prawdziwego przeładowania strony).
+    #
+    # JEDEN clientside callback, JEDNO Output - z tych samych powodów co
+    # motyw w dash_app.py: dwa callbacki na Output(FAVORITES,"data")
+    # wymagałyby allow_duplicate=True na jednym z nich, a
+    # allow_duplicate=True + prevent_initial_call="initial_duplicate" na
+    # CLIENTSIDE callbacku w tej wersji Dasha (2.18.2) wywołuje błąd
+    # renderera ("Cannot read properties of undefined (reading 'apply')") -
+    # zweryfikowane wcześniej przy tym samym problemie dla motywu. Zamiast
+    # tego: jeden callback z DWOMA Inputami (init + gwiazdki wszystkich
+    # wierszy), a "czy to prawdziwy klik czy tylko montowanie widoku"
+    # rozstrzyga PORÓWNANIE n_clicks z ostatnią zapamiętaną wartością PER
+    # TICKER (zmienna modułowa w JS) - dokładnie ta sama technika, która
+    # naprawiła identyczną niejednoznaczność przy przełączniku motywu
+    # (kolejność w callback_context.triggered przy starcie strony nie jest
+    # gwarantowana, więc nie wolno na niej polegać).
+    app.clientside_callback(
+        """
+        function(_n_intervals, n_clicks_list) {
+            let favorites;
+            try {
+                const raw = window.localStorage.getItem('barcs-master-favorites');
+                favorites = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                favorites = [];
+            }
+
+            const idsList = (dash_clientside.callback_context.inputs_list[1] || []);
+            window.__barcsFavClicks = window.__barcsFavClicks || {};
+            let toggled = null;
+            for (let i = 0; i < idsList.length; i++) {
+                const ticker = idsList[i].id.ticker;
+                const n = n_clicks_list[i] || 0;
+                const prev = window.__barcsFavClicks[ticker] || 0;
+                if (n > prev) {
+                    toggled = ticker;
+                }
+                window.__barcsFavClicks[ticker] = n;
+            }
+
+            if (toggled) {
+                const idx = favorites.indexOf(toggled);
+                if (idx >= 0) { favorites.splice(idx, 1); } else { favorites.push(toggled); }
+                try {
+                    window.localStorage.setItem('barcs-master-favorites', JSON.stringify(favorites));
+                } catch (e) {}
+            }
+            return favorites;
+        }
+        """,
+        Output(FAVORITES, "data"),
+        Input(FAV_INIT, "n_intervals"),
+        Input({"type": "master-fav-star", "ticker": dash.ALL}, "n_clicks"),
+    )
 
     @app.callback(
         Output(PRICE_CHART, "figure"),
