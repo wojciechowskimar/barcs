@@ -33,7 +33,15 @@ app = dash.Dash(
 app.layout = html.Div(
     [
         dcc.Store(id="view", data=DEFAULT_VIEW, storage_type="session"),
-        dcc.Store(id="theme", data="dark", storage_type="local"),
+        # storage_type="memory" - "local"/"session" wbudowane w dcc.Store
+        # okazało się NIEZAWODNE tylko w obrębie jednej sesji: przy prawdziwym
+        # przeładowaniu strony (F5, nie tylko rerender) wartość wracała do
+        # domyślnej mimo że localStorage faktycznie trzymał "light" tuż przed
+        # odświeżeniem (zweryfikowane empirycznie - realny bug, nie fałszywy
+        # alarm). Persystencję robimy więc RĘCZNIE niżej (theme-init +
+        # localStorage.getItem/setItem), zamiast polegać na storage_type.
+        dcc.Store(id="theme", storage_type="memory"),
+        dcc.Interval(id="theme-init", n_intervals=0, max_intervals=1, interval=1),
         html.Div(id="app-root", className="barcs-app barcs-dark", children=[
             html.Div(id="sidebar-slot"),
             html.Div(
@@ -83,27 +91,54 @@ def navigate(_clicks, current):
 # Clientside, bo przełączenie motywu to zmiana jednej klasy — nie ma po co
 # wracać na serwer. Zmieniają się WYŁĄCZNIE kolory; żaden odstęp, promień ani
 # rozmiar nie różni się między motywami, więc layout się nie przestawia.
-
+#
+# Persystencja jest RĘCZNA (localStorage.getItem/setItem wprost), nie przez
+# storage_type dcc.Store - patrz komentarz przy definicji Store("theme")
+# wyżej. CELOWO jeden callback, jedno Output: dwa callbacki na
+# Output("theme","data") z allow_duplicate=True (pierwsza próba tej poprawki)
+# wywoływały błąd renderera Dasha ("Cannot read properties of undefined
+# (reading 'apply')") i niestabilne odtwarzanie stanu.
+#
+# Druga próba (ta niżej, ale bez licznika kliknięć) rozróżniała "to inicjalny
+# load czy kliknięcie" po tym, który Input widnieje jako pierwszy w
+# callback_context.triggered. Okazało się to NIEDETERMINISTYCZNE: przy
+# starcie strony Dash odpala callback raz dla obu Inputów naraz (n_intervals=1
+# I n_clicks=0 to teoretyczne "triggery"), a kolejność w triggered[] czasem
+# stawiała 'theme-toggle' na pierwszym miejscu mimo że to nie był klik -
+# stąd motyw bywał losowo odwracany i nadpisywany w localStorage tuż po
+# starcie (zweryfikowane empirycznie: dwa identyczne odświeżenia dały raz
+# "dark", raz "light" z tym samym stanem localStorage przed odświeżeniem).
+#
+# Naprawa: nie ufamy kolejności triggered[] w ogóle. Klik odróżniamy od
+# inicjalnego stanu przez PORÓWNANIE n_clicks z ostatnią zapamiętaną
+# wartością (zmienna modułowa w JS, przeżywa między wywołaniami tego samego
+# page-load) - n_clicks rośnie tylko przy realnym kliknięciu, nigdy przy
+# starcie strony (zawsze 0 na starcie).
 app.clientside_callback(
     """
-    function(theme) {
-        const cls = theme === 'light' ? 'barcs-app barcs-light' : 'barcs-app barcs-dark';
-        return cls;
+    function(_n_intervals, _n_clicks) {
+        let theme;
+        try {
+            const prevClicks = window.__barcsThemeClicks || 0;
+            const isToggle = typeof _n_clicks === 'number' && _n_clicks > prevClicks;
+            window.__barcsThemeClicks = _n_clicks || 0;
+            if (isToggle) {
+                const current = window.localStorage.getItem('barcs-theme');
+                theme = current === 'light' ? 'dark' : 'light';
+                window.localStorage.setItem('barcs-theme', theme);
+            } else {
+                theme = window.localStorage.getItem('barcs-theme') === 'light' ? 'light' : 'dark';
+            }
+        } catch (e) {
+            theme = 'dark';
+        }
+        return theme === 'light' ? 'barcs-app barcs-light' : 'barcs-app barcs-dark';
     }
     """,
     Output("app-root", "className"),
-    Input("theme", "data"),
-)
-
-
-@app.callback(
-    Output("theme", "data"),
+    Input("theme-init", "n_intervals"),
     Input("theme-toggle", "n_clicks"),
-    State("theme", "data"),
-    prevent_initial_call=True,
 )
-def toggle_theme(_n, current):
-    return "light" if current == "dark" else "dark"
 
 
 # --- rejestracja callbacków widoków -----------------------------------------

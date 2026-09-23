@@ -26,15 +26,22 @@ NAV_SECTIONS = [
 
 
 def brand(size: int = 24, wordmark: bool = True) -> html.Div:
-    """Logo + wordmark. Logo ZAWSZE jako koło (białe tło pliku), nigdy
-    przycięte do kwadratu, nigdy przekolorowane.
+    """Logo + wordmark.
+
+    Logo to linia bez tła (PNG z przezroczystością) - dwa warianty, czarny
+    i biały, przełączane WYŁĄCZNIE CSS-em (.barcs-logo--for-dark/--for-light
+    w assets/barcs.css, sterowane klasą .barcs-dark/.barcs-light na
+    #app-root) - bez tego biały wariant znikałby na jasnym tle i odwrotnie.
+    Oba <img> są zawsze w DOM-ie, widoczny jest tylko jeden na raz.
 
     Gradient wordmarku jest ten sam w obu motywach — to znak marki, nie
     element interfejsu.
     """
     children = [
-        html.Img(src="/assets/logo.png", alt="BARCS", width=size, height=size,
-                 className="barcs-logo"),
+        html.Img(src="/assets/logo_light_on_dark.png", alt="BARCS", width=size, height=size,
+                 className="barcs-logo barcs-logo--for-dark"),
+        html.Img(src="/assets/logo_dark_on_light.png", alt="BARCS", width=size, height=size,
+                 className="barcs-logo barcs-logo--for-light"),
     ]
     if wordmark:
         children.append(html.Span("BARCS", className="barcs-wordmark"))
