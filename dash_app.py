@@ -16,7 +16,7 @@ from __future__ import annotations
 import dash
 from dash import Input, Output, State, dcc, html
 
-from src.ui.shell import sidebar_nav, topbar
+from src.ui.shell import crumb_nodes, sidebar_nav, topbar
 from src.views import VIEWS, DEFAULT_VIEW
 
 # suppress_callback_exceptions: callbacki wszystkich widoków rejestrują się przy
@@ -46,7 +46,7 @@ app.layout = html.Div(
             html.Div(id="sidebar-slot"),
             html.Div(
                 [
-                    html.Div(id="topbar-slot"),
+                    topbar(),
                     html.Div(id="content", className="barcs-content"),
                 ],
                 className="barcs-shell",
@@ -60,7 +60,7 @@ app.layout = html.Div(
 
 @app.callback(
     Output("sidebar-slot", "children"),
-    Output("topbar-slot", "children"),
+    Output("crumbs-slot", "children"),
     Output("content", "children"),
     Input("view", "data"),
 )
@@ -69,7 +69,7 @@ def render_view(view: str | None):
     module = VIEWS[key]["module"]
     return (
         sidebar_nav(active=key),
-        topbar(crumbs=VIEWS[key]["crumbs"]),
+        crumb_nodes(VIEWS[key]["crumbs"]),
         module.layout(),
     )
 

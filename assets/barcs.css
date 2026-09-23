@@ -376,7 +376,14 @@ div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-basew
 .barcs-nav-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .barcs-nav-footer{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding:12px 8px 0;border-top:1px solid var(--barcs-border-subtle)}
 .barcs-nav-footnote{font-size:12px;color:var(--barcs-dim)}
-.barcs-sidebar{display:flex;flex-direction:column}
+/* CEL: <nav class="barcs-sidebar"> siedzi w #sidebar-slot (zwykły div bez
+   display:flex, bo Dash callback wstawia tam children) - stretch z
+   .barcs-app rozciąga #sidebar-slot, ale bez height:100% na samym nav-ie ta
+   wysokość by się NIE przeniosła na dziecko i tło szyny kończyłoby się po
+   treści, zamiast sięgać dołu viewportu (dokładnie ten bug zgłoszony przez
+   usera - zweryfikowany zrzutem ekranu). */
+#sidebar-slot{display:contents}
+.barcs-sidebar{display:flex;flex-direction:column;height:100%}
 
 /* --- top bar: okruszki, szukanie, przyciski ikonowe --- */
 .barcs-crumbs{display:flex;align-items:center;gap:7px}
@@ -452,11 +459,58 @@ div[data-baseweb="notification"][kind="info"],[data-testid="stAlert"][data-basew
 .barcs-input:focus{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
 .barcs-input--mono{font-family:var(--barcs-mono);font-variant-numeric:tabular-nums}
 
+/* --- pole z etykietą + input z sufiksem jednostki (Backtester: kapitał) --- */
+.barcs-field{display:flex;flex-direction:column;gap:5px}
+.barcs-field-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--barcs-dim)}
+.barcs-input-suffix{display:flex;align-items:center;gap:6px;height:30px;padding:0 9px;
+  background:var(--barcs-card);border:1px solid var(--barcs-border);border-radius:5px}
+.barcs-input-suffix:focus-within{border-color:var(--barcs-accent-hover);box-shadow:var(--barcs-ring)}
+.barcs-input-suffix input{flex:1;min-width:0;border:none;background:transparent;outline:none;
+  color:var(--barcs-text-strong);font-size:13px}
+.barcs-input-suffix span{font-size:12px;color:var(--barcs-dim)}
+
+/* --- segmented control (dcc.RadioItems, np. zakres dat w Backtesterze) --- */
+.barcs-segmented{display:inline-flex;background:var(--barcs-panel);border:1px solid var(--barcs-border-subtle);
+  border-radius:7px;padding:2px;gap:2px;height:30px;align-items:center}
+.barcs-segment{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 12px;
+  border-radius:5px;font-size:12px;font-weight:600;color:var(--barcs-muted);cursor:pointer;
+  transition:background-color 120ms var(--barcs-ease),color 120ms var(--barcs-ease)}
+.barcs-segment:hover{color:var(--barcs-text-strong)}
+.barcs-segment:has(input:checked){background:var(--barcs-raised);color:var(--barcs-text-strong)}
+
 /* --- checklist (dcc.Checklist) --- */
 .barcs-checklist{display:flex;flex-direction:column;gap:8px}
 .barcs-checklist label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--barcs-text);cursor:pointer}
-.barcs-checklist input[type="checkbox"],.barcs-checklist input[type="radio"]{accent-color:var(--barcs-accent);width:14px;height:14px;margin:0}
 .barcs-checklist--row{flex-direction:row;gap:20px}
+
+/* CEL: kwadrat/kółko rysowane CZYSTYM CSS-em na natywnym <input>, zamiast
+   polegać na accent-color (jedyne co było wcześniej) - accent-color owszem
+   barwi natywny widget na fiolet, ale kształt/obramowanie/checkmark zostają
+   whatever przegladarka/OS narzuci, więc obok reszty w pełni customowego UI
+   wyglądało to jak obcy element (dokładnie to zgłosił user). Referencyjny
+   Checkbox (_ds_bundle.js) chowa <input> (opacity 0) i rysuje wygląd na
+   sąsiednim <span> - my zamiast tego stylujemy SAM input przez
+   appearance:none + ::after, bo dcc.Checklist/RadioItems nie zostawia
+   miejsca na dodatkowy span bez własnego komponentu. Efekt wizualny ten sam. */
+.barcs-checklist input[type="checkbox"],.barcs-checklist input[type="radio"]{
+  -webkit-appearance:none;appearance:none;margin:0;flex:0 0 auto;
+  width:14px;height:14px;box-sizing:border-box;cursor:pointer;position:relative;
+  background:transparent;border:1px solid var(--barcs-border);border-radius:4px;
+  transition:background-color 120ms var(--barcs-ease),border-color 120ms var(--barcs-ease);
+}
+.barcs-checklist input[type="radio"]{border-radius:999px}
+.barcs-checklist input[type="checkbox"]:hover,.barcs-checklist input[type="radio"]:hover{border-color:var(--barcs-border-strong)}
+.barcs-checklist input[type="checkbox"]:checked,.barcs-checklist input[type="radio"]:checked{
+  background:var(--barcs-accent);border-color:var(--barcs-accent);
+}
+.barcs-checklist input[type="checkbox"]:checked::after{
+  content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;
+  border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);
+}
+.barcs-checklist input[type="radio"]:checked::after{
+  content:"";position:absolute;left:3px;top:3px;width:6px;height:6px;border-radius:999px;background:#fff;
+}
+.barcs-checklist input[type="checkbox"]:focus-visible,.barcs-checklist input[type="radio"]:focus-visible{box-shadow:var(--barcs-ring)}
 
 /* --- Master Chart: panel firm (lista + szukanie).
    max-height JAWNIE (nie tylko flex:1/min-height:0) - sama flexbox nie

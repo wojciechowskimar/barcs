@@ -214,6 +214,7 @@ ICONS = {
     "backtest": "flask-conical",
     "raw_data": "database",
     # znaczenia
+    "home": "house",
     "arm": "git-fork",
     "network": "globe",
     "warning": "triangle-alert",

@@ -79,18 +79,36 @@ def sidebar_nav(active: str) -> html.Nav:
     return html.Nav(blocks, className="barcs-sidebar")
 
 
-def topbar(crumbs: list[str]) -> html.Header:
-    """Górny pasek: lokalizacja, szukanie, odświeżenie cache, motyw, konto."""
-    crumb_nodes = []
+def crumb_nodes(crumbs: list[str]) -> list:
+    """Węzły okruszków, z ikoną domku na początku (tak robi referencyjny
+    Breadcrumb w _ds_bundle.js). Osobna funkcja od topbar() - to jedyna
+    część górnego paska, która zmienia się między widokami, patrz
+    #crumbs-slot w topbar()."""
+    nodes = [icon("home", 14)]
     for i, c in enumerate(crumbs):
-        crumb_nodes.append(html.Span("/", className="barcs-crumb-sep"))
+        nodes.append(html.Span("/", className="barcs-crumb-sep"))
         last = i == len(crumbs) - 1
-        crumb_nodes.append(
+        nodes.append(
             html.Span(c, className="barcs-crumb" if last else "barcs-crumb barcs-crumb--muted")
         )
+    return nodes
+
+
+def topbar() -> html.Header:
+    """Górny pasek: lokalizacja, szukanie, odświeżenie cache, motyw, konto.
+
+    Montowany RAZ jako statyczna część app.layout (patrz dash_app.py) -
+    tylko #crumbs-slot aktualizuje się przy nawigacji (render_view). Wcześniej
+    cały topbar (razem z #theme-toggle) żył w slocie odtwarzanym przy każdej
+    zmianie widoku, więc #theme-toggle na chwilę znikał z drzewa DOM przy
+    każdym kliknięciu w szynie - Dash zgłaszał to jako "A nonexistent object
+    was used in an Input" przy KAŻDEJ nawigacji (zweryfikowane w konsoli:
+    błąd wymieniał dokładnie app-root/sidebar-slot/topbar-slot/content).
+    Statyczny topbar usuwa problem u źródła zamiast go tłumić.
+    """
     return html.Header(
         [
-            html.Div(crumb_nodes, className="barcs-crumbs"),
+            html.Div(id="crumbs-slot", className="barcs-crumbs"),
             html.Div(className="barcs-spacer"),
             # TODO: podłącz szukanie do queries.search_companies()
             html.Div(

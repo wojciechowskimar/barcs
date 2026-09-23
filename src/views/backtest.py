@@ -25,9 +25,11 @@ from __future__ import annotations
 from dash import Input, Output, dcc, html
 
 from src.ui.tokens import MISSING
-from src.ui.widgets import button, callout, empty_state, metric_tile, section_title
+from src.ui.widgets import badge, button, callout, empty_state, metric_tile, section_title
 
+RANGE = "backtest-range"
 RUN = "backtest-run"
+RUN_MSG = "backtest-run-msg"
 BENCHMARK = "backtest-benchmark"
 CAPITAL = "backtest-capital"
 RESULTS = "backtest-results"
@@ -50,7 +52,52 @@ def layout() -> html.Div:
                 "look-ahead bias.",
                 tone="warning", icon_name="warning", title="Moduł w budowie",
             ),
-            # TODO: toolbar — zakres, benchmark, kapitał początkowy, przycisk
+            html.Div(
+                [
+                    dcc.RadioItems(
+                        id=RANGE,
+                        options=[{"label": l, "value": l} for l in ("1Y", "3Y", "5Y", "Max")],
+                        value="3Y",
+                        className="barcs-segmented",
+                        inputStyle={"display": "none"},
+                        labelClassName="barcs-segment",
+                    ),
+                    html.Div(
+                        [
+                            html.Span("Benchmark", className="barcs-field-label"),
+                            dcc.Dropdown(
+                                id=BENCHMARK,
+                                options=["Brak", "S&P 500 (^GSPC)", "WIG20 (WIG20.WA)"],
+                                value="S&P 500 (^GSPC)", clearable=False,
+                                className="barcs-dropdown", style={"width": "190px"},
+                            ),
+                        ],
+                        className="barcs-field",
+                    ),
+                    html.Div(
+                        [
+                            html.Span("Kapitał początkowy", className="barcs-field-label"),
+                            html.Div(
+                                [
+                                    dcc.Input(id=CAPITAL, type="text", value="100 000",
+                                              className="barcs-input--mono", debounce=True),
+                                    html.Span("PLN"),
+                                ],
+                                className="barcs-input-suffix",
+                            ),
+                        ],
+                        className="barcs-field", style={"width": "150px"},
+                    ),
+                    button("Uruchom symulację", button_id=RUN, variant="primary", icon_name="run"),
+                    # Referencyjny mockup (backtest-screen.jsx) ma tu badge "dane
+                    # benchmarku pobierane z sieci" - to nieaktualne / mylące dla
+                    # TEGO apki: benchmark liczony jest WYŁĄCZNIE lokalnie (patrz
+                    # docstring modułu wyżej, poprawione już w wersji streamlitowej).
+                    badge("Benchmark liczony lokalnie (SQLite)", tone="positive", dot=True),
+                ],
+                className="barcs-toolbar",
+            ),
+            html.Div(id=RUN_MSG),
             callout(
                 "Dane lokalne (SQLite cache) — benchmark liczony wyłącznie z "
                 "lokalnej bazy, bez połączeń sieciowych.",
@@ -76,5 +123,15 @@ def layout() -> html.Div:
 
 
 def register_callbacks(app) -> None:
-    # Nic do rejestrowania, dopóki src/backtesting/ jest puste.
-    pass
+    # JEDYNY callback tego widoku: przycisk "Uruchom symulację" musi istnieć
+    # i reagować (user zgłosił jego BRAK jako błąd), ale skoro src/backtesting/
+    # zawiera tylko puste __init__.py, jedyna uczciwa reakcja to powiedzieć to
+    # wprost - żadnych zmyślonych wyników (patrz docstring modułu).
+    @app.callback(Output(RUN_MSG, "children"), Input(RUN, "n_clicks"), prevent_initial_call=True)
+    def on_run(_n_clicks):
+        return callout(
+            "Silnik symulacji nie jest jeszcze zaimplementowany — src/backtesting/ "
+            "zawiera na razie tylko pusty __init__.py. Ten przycisk pokazuje docelowe "
+            "miejsce w interfejsie; nie generuje wyników.",
+            tone="warning", icon_name="warning", title="Symulacja niedostępna",
+        )
